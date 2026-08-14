@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 import { html, css, type TemplateResult } from 'lit';
@@ -242,30 +242,24 @@ export class LcarsElbow extends LcarsElement {
   @property({ type: String, reflect: true })
   orientation: LcarsElbowDirection = 'top-left';
 
-  @property({ type: String, attribute: 'direction' })
-  direction?: LcarsElbowDirection;
-
   @property({ type: String })
   color = 'primary';
 
   @property({ type: String })
   heading = '';
 
-  @property({ type: String, attribute: 'title' })
-  elbowTitle = '';
-
   @property({ type: String })
   label = '';
 
   private get activeOrientation(): LcarsElbowDirection {
-    const raw = this.direction || this.orientation;
+    const raw = this.orientation;
     return ['top-left', 'bottom-left', 'top-right', 'bottom-right'].includes(raw)
       ? raw
       : 'top-left';
   }
 
   private get displayHeading(): string {
-    return this.elbowTitle || this.heading;
+    return this.heading;
   }
 
   override render(): TemplateResult {

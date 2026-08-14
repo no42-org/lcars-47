@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Copyright 2026 Ronny Trommer <ronny@no42.org>
-  SPDX-License-Identifier: Apache-2.0
+  SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 <html lang="en" data-lcars-theme="tng">
   <head>
@@ -14,17 +14,17 @@
       body {
         margin: 0;
         padding: 0;
-        width: 100vw;
+        width: 100%;
         height: 100vh;
-        background-color: #000000;
-        color: #ff9900;
+        background-color: var(--lcars-color-bg, #000000);
+        color: var(--lcars-color-text, #ff9900);
         font-family: 'Antonio', sans-serif;
         overflow: hidden;
         box-sizing: border-box;
       }
 
       .app-container {
-        width: 100vw;
+        width: 100%;
         height: 100vh;
         padding: 12px;
         box-sizing: border-box;
@@ -107,11 +107,11 @@
   </head>
   <body>
     <div class="app-container">
-      <lcars-frame theme="tng" id="workbench-frame">
+      <lcars-frame id="workbench-frame">
         <!-- Top Left Elbow -->
         <lcars-elbow
           slot="elbow-tl"
-          direction="top-left"
+          orientation="top-left"
           heading="LCARS 47"
           label="TACTICAL CONSOLE"
         ></lcars-elbow>
@@ -133,11 +133,12 @@
           <div class="section-label">AUDIO CONTROL</div>
           <lcars-button id="btn-mute" color="warning" sound="input">MUTE AUDIO</lcars-button>
           <div class="volume-control">
-            <span>VOL:</span>
+            <span id="volume-label">VOL:</span>
             <input
               type="range"
               id="volume-slider"
               class="volume-slider"
+              aria-labelledby="volume-label"
               min="0"
               max="1"
               step="0.05"
@@ -271,7 +272,7 @@
 
         <!-- Footer Elements -->
         <div slot="footer-readout">SYSTEM STATUS: ALL DECKS NOMINAL // EPS GRID BALANCED</div>
-        <lcars-elbow slot="elbow-br" direction="bottom-right" label="GRID OK"></lcars-elbow>
+        <lcars-elbow slot="elbow-br" orientation="bottom-right" label="GRID OK"></lcars-elbow>
       </lcars-frame>
     </div>
 
@@ -280,24 +281,40 @@
       import {
         setLcarsTheme,
         setAudioVolume,
+        getAudioVolume,
         muteAudio,
         unmuteAudio,
         isAudioMuted,
       } from './src/index.ts';
 
-      // Theme controls
-      document.getElementById('btn-theme-tng')?.addEventListener('lcars-click', () => {
-        setLcarsTheme('tng');
-      });
-      document.getElementById('btn-theme-ds9')?.addEventListener('lcars-click', () => {
-        setLcarsTheme('ds9');
-      });
-      document.getElementById('btn-theme-nemesis')?.addEventListener('lcars-click', () => {
-        setLcarsTheme('nemesis');
-      });
-      document.getElementById('btn-theme-contrast')?.addEventListener('lcars-click', () => {
-        setLcarsTheme('contrast');
-      });
+      // Theme controls. setLcarsTheme() with no target writes <html>; nothing
+      // below it may re-declare the palette or the switch is inert.
+      const THEME_KEY = 'lcars-workbench-theme';
+
+      function applyTheme(theme) {
+        setLcarsTheme(theme);
+        try {
+          sessionStorage.setItem(THEME_KEY, theme);
+        } catch {
+          // Private browsing / storage disabled: theming still works, it just
+          // does not survive a reload.
+        }
+      }
+
+      for (const theme of ['tng', 'ds9', 'nemesis', 'contrast']) {
+        document
+          .getElementById(`btn-theme-${theme}`)
+          ?.addEventListener('lcars-click', () => applyTheme(theme));
+      }
+
+      try {
+        const stored = sessionStorage.getItem(THEME_KEY);
+        if (stored) {
+          setLcarsTheme(stored);
+        }
+      } catch {
+        // ignore
+      }
 
       // Audio controls
       const muteBtn = document.getElementById('btn-mute');
@@ -314,6 +331,13 @@
       });
 
       const volumeSlider = document.getElementById('volume-slider');
+      if (volumeSlider) {
+        volumeSlider.value = String(getAudioVolume());
+      }
+      if (muteBtn && isAudioMuted()) {
+        muteBtn.textContent = 'UNMUTE AUDIO';
+        muteBtn.color = 'alert';
+      }
       volumeSlider?.addEventListener('input', (e) => {
         const vol = parseFloat(e.target.value);
         if (Number.isFinite(vol)) {
@@ -328,6 +352,11 @@
         simRunning = !simRunning;
         simBtn.textContent = simRunning ? 'PAUSE TELEMETRY' : 'RESUME TELEMETRY';
         simBtn.color = simRunning ? 'secondary' : 'warning';
+        if (simRunning) {
+          startLoop();
+        } else {
+          stopLoop();
+        }
       });
 
       const warpReadout = document.getElementById('readout-warp');
@@ -339,36 +368,85 @@
       const shieldsGauge = document.getElementById('gauge-shields');
       const stardateDisplay = document.getElementById('stardate-display');
 
+      const pills = {
+        shields: document.getElementById('pill-shields'),
+        phasers: document.getElementById('pill-phasers'),
+        torpedoes: document.getElementById('pill-torpedoes'),
+        subspace: document.getElementById('pill-subspace'),
+      };
+
       let stardate = 47920.4;
       let tick = 0;
+      let rafId = null;
+      let lastFrame = null;
 
-      function updateTelemetry() {
-        if (simRunning) {
-          tick += 0.05;
-          stardate += 0.001;
+      function updateTelemetry(now) {
+        // Integrate elapsed time so the simulation runs at the same rate on a
+        // 60Hz and a 120Hz display.
+        const deltaSec = lastFrame === null ? 1 / 60 : Math.min((now - lastFrame) / 1000, 0.1);
+        lastFrame = now;
 
-          // Modulate telemetry values smoothly
-          const warpVal = 9.9 + 0.08 * Math.sin(tick * 0.7);
-          const antimatterVal = 49.5 + 1.2 * Math.cos(tick * 0.5);
-          const powerVal = Math.round(4700 + 120 * Math.sin(tick * 0.3));
-          const warpCoreVal = Math.round(80 + 12 * Math.sin(tick * 0.4));
-          const plasmaVal = Math.round(65 + 15 * Math.cos(tick * 0.6));
-          const shieldsVal = Math.round(95 + 4 * Math.sin(tick * 0.2));
+        tick += 3 * deltaSec;
+        stardate += 0.06 * deltaSec;
 
-          if (warpReadout) warpReadout.value = warpVal;
-          if (antimatterReadout) antimatterReadout.value = antimatterVal;
-          if (powerReadout) powerReadout.value = powerVal;
-          if (shieldReadout) shieldReadout.value = shieldsVal;
-          if (warpGauge) warpGauge.value = warpCoreVal;
-          if (plasmaGauge) plasmaGauge.value = plasmaVal;
-          if (shieldsGauge) shieldsGauge.value = shieldsVal;
-          if (stardateDisplay) stardateDisplay.textContent = `STARDATE ${stardate.toFixed(1)}`;
+        const warpVal = 9.9 + 0.08 * Math.sin(tick * 0.7);
+        const antimatterVal = 49.5 + 1.2 * Math.cos(tick * 0.5);
+        const powerVal = Math.round(4700 + 120 * Math.sin(tick * 0.3));
+        const warpCoreVal = Math.round(80 + 12 * Math.sin(tick * 0.4));
+        const plasmaVal = Math.round(65 + 15 * Math.cos(tick * 0.6));
+        const shieldsVal = Math.round(95 + 4 * Math.sin(tick * 0.2));
+
+        if (warpReadout) warpReadout.value = warpVal;
+        if (antimatterReadout) antimatterReadout.value = antimatterVal;
+        if (powerReadout) powerReadout.value = powerVal;
+        if (shieldReadout) shieldReadout.value = shieldsVal;
+        if (warpGauge) warpGauge.value = warpCoreVal;
+        if (plasmaGauge) plasmaGauge.value = plasmaVal;
+        if (shieldsGauge) shieldsGauge.value = shieldsVal;
+        if (stardateDisplay) stardateDisplay.textContent = `STARDATE ${stardate.toFixed(1)}`;
+
+        // Status indicators track the same telemetry the gauges show.
+        if (pills.shields) {
+          pills.shields.status = shieldsVal >= 95 ? 'nominal' : shieldsVal >= 92 ? 'warning' : 'alert';
+          pills.shields.label = `SHIELDS ${shieldsVal}%`;
+        }
+        if (pills.phasers) {
+          pills.phasers.status = powerVal >= 4700 ? 'nominal' : 'standby';
+        }
+        if (pills.torpedoes) {
+          pills.torpedoes.status = warpCoreVal >= 88 ? 'warning' : 'standby';
+        }
+        if (pills.subspace) {
+          pills.subspace.status = antimatterVal >= 50 ? 'nominal' : 'warning';
         }
 
-        requestAnimationFrame(updateTelemetry);
+        rafId = requestAnimationFrame(updateTelemetry);
       }
 
-      requestAnimationFrame(updateTelemetry);
+      function startLoop() {
+        if (rafId === null && simRunning && !document.hidden) {
+          lastFrame = null;
+          rafId = requestAnimationFrame(updateTelemetry);
+        }
+      }
+
+      function stopLoop() {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      }
+
+      // Pause while the tab is hidden instead of burning a callback per frame.
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          stopLoop();
+        } else {
+          startLoop();
+        }
+      });
+
+      startLoop();
     </script>
   </body>
 </html>

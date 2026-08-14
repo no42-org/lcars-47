@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 import { html, css, type TemplateResult } from 'lit';
@@ -75,9 +75,6 @@ export class LcarsPanel extends LcarsElement {
   @property({ type: String })
   heading = '';
 
-  @property({ type: String, attribute: 'title' })
-  panelTitle = '';
-
   @property({ type: String })
   subtitle = '';
 
@@ -88,7 +85,7 @@ export class LcarsPanel extends LcarsElement {
   noBorder = false;
 
   private get displayHeading(): string {
-    return this.panelTitle || this.heading;
+    return this.heading;
   }
 
   override render(): TemplateResult {

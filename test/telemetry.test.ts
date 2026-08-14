@@ -216,6 +216,31 @@ describe('LCARS Telemetry & Data Displays', () => {
       expect(filled()).toBe(10);
     });
 
+    it('never displays fill above the actual reading', async () => {
+      // Mid-scale values are where floor and round diverge; rounding up makes
+      // an alarm gauge read higher than the data.
+      const bar = document.createElement('lcars-bargraph') as LcarsBargraph;
+      bar.segments = 10;
+      bar.value = 45;
+      document.body.appendChild(bar);
+      await bar.updateComplete;
+      const filled = () => bar.shadowRoot?.querySelectorAll('.segment.filled').length;
+
+      expect(filled()).toBe(4);
+
+      bar.value = 59;
+      await bar.updateComplete;
+      expect(filled()).toBe(5);
+    });
+
+    it('keeps a definite track length so the vertical fill can resolve', () => {
+      // happy-dom performs no layout, so assert the declaration itself: a
+      // percentage height needs a definite containing block.
+      const css = LcarsBargraph.styles.toString();
+      expect(css).toMatch(/\.bargraph-track\.vertical\s*\{[^}]*\bheight:\s*var\(--lcars-bargraph-length/);
+      expect(css).toMatch(/\.bargraph-track\.horizontal\s*\{[^}]*\bwidth:\s*var\(--lcars-bargraph-length/);
+    });
+
     it('exposes a sanitized aria range for non-numeric min/max', async () => {
       document.body.innerHTML = '<lcars-bargraph max="abc" min="xyz" value="50"></lcars-bargraph>';
       const bar = document.body.firstElementChild as LcarsBargraph;

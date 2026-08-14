@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 import { html, css, type TemplateResult } from 'lit';
@@ -53,16 +53,17 @@ export class LcarsBargraph extends LcarsElement {
     .bargraph-track.horizontal {
       flex-direction: row;
       height: var(--lcars-bar-height-sm, 18px);
-      min-width: 140px;
+      width: var(--lcars-bargraph-length, 140px);
       gap: 2px;
       padding: 2px;
     }
 
-    /* Vertical track */
+    /* Vertical track. Needs a definite height so the continuous bar's
+       percentage height has something to resolve against. */
     .bargraph-track.vertical {
       flex-direction: column-reverse;
       width: var(--lcars-bar-height-sm, 18px);
-      min-height: 140px;
+      height: var(--lcars-bargraph-length, 140px);
       gap: 2px;
       padding: 2px;
     }
@@ -108,9 +109,9 @@ export class LcarsBargraph extends LcarsElement {
   @property({ type: Number })
   segments = 10;
 
-  @property({ type: Boolean })
-  segmented = true;
-
+  // Inverted rather than `segmented = true`: a default-true boolean property
+  // cannot be switched off from markup, since the converter never runs for an
+  // absent attribute.
   @property({ type: Boolean })
   continuous = false;
 
@@ -139,7 +140,7 @@ export class LcarsBargraph extends LcarsElement {
   precision?: number;
 
   private get isSegmentedMode(): boolean {
-    return !this.continuous && this.segmented;
+    return !this.continuous;
   }
 
   private get normalizedValue(): number {
@@ -185,7 +186,8 @@ export class LcarsBargraph extends LcarsElement {
     const segCount = Number.isFinite(this.segments) ? Math.floor(this.segments) : 10;
     const clampedSegments = Math.max(1, Math.min(100, segCount));
 
-    let filledCount = Math.round((percent / 100) * clampedSegments);
+    // Floor, so displayed fill never exceeds the actual reading.
+    let filledCount = Math.floor((percent / 100) * clampedSegments);
     if (percent > 0 && filledCount === 0) {
       filledCount = 1;
     } else if (percent < 100 && filledCount === clampedSegments) {

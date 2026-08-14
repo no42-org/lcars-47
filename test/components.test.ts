@@ -249,6 +249,24 @@ describe('LCARS Geometric Framework Components', () => {
       expect(container?.classList.contains('top-left')).toBe(true);
     });
 
+    it('drives orientation and heading from markup, without global-attribute aliases', async () => {
+      document.body.innerHTML =
+        '<lcars-elbow orientation="bottom-right" heading="LCARS 47"></lcars-elbow>';
+      const elbow = document.body.firstElementChild as LcarsElbow;
+      await elbow.updateComplete;
+
+      expect(elbow.shadowRoot?.querySelector('.elbow-container')?.classList.contains('bottom-right')).toBe(true);
+      expect(elbow.shadowRoot?.querySelector('.title-text')?.textContent).toBe('LCARS 47');
+      // The reflected attribute must agree with what was rendered.
+      expect(elbow.getAttribute('orientation')).toBe('bottom-right');
+
+      // `title` is a reserved global attribute and must not drive the heading.
+      document.body.innerHTML = '<lcars-elbow title="TOOLTIP"></lcars-elbow>';
+      const tooltipElbow = document.body.firstElementChild as LcarsElbow;
+      await tooltipElbow.updateComplete;
+      expect(tooltipElbow.shadowRoot?.querySelector('.title-text')).toBeNull();
+    });
+
     it('renders heading and label as slot fallback content so slotted content wins', async () => {
       const elbow = document.createElement('lcars-elbow') as LcarsElbow;
       elbow.heading = 'FALLBACK';
@@ -282,6 +300,14 @@ describe('LCARS Geometric Framework Components', () => {
       const container = panel.shadowRoot?.querySelector('.panel-container');
       expect(container?.classList.contains('bordered')).toBe(true);
       expect(container?.getAttribute('style')).toContain('--panel-color: var(--lcars-color-accent);');
+    });
+
+    it('drives the header from heading, not the global title attribute', async () => {
+      document.body.innerHTML = '<lcars-panel heading="PROPULSION" title="TOOLTIP"></lcars-panel>';
+      const panel = document.body.firstElementChild as LcarsPanel;
+      await panel.updateComplete;
+
+      expect(panel.shadowRoot?.querySelector('.panel-title')?.textContent).toBe('PROPULSION');
     });
 
     it('supports no-border attribute and omits header when heading and subtitle are empty', async () => {
