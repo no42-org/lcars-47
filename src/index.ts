@@ -17,6 +17,12 @@ import { LcarsPanel } from './components/lcars-panel';
 import { LcarsReadout, type LcarsReadoutAlign } from './components/lcars-readout';
 import { LcarsBargraph, type LcarsBargraphOrientation } from './components/lcars-bargraph';
 import { LcarsStatusPill, type LcarsSystemStatus } from './components/lcars-status-pill';
+import {
+  LcarsKeypad,
+  type LcarsKeypadKeyKind,
+  type LcarsChangeEventDetail,
+  type LcarsSubmitEventDetail,
+} from './components/lcars-keypad';
 
 // Export Themes & Utilities
 export {
@@ -65,6 +71,10 @@ export {
   type LcarsBargraphOrientation,
   LcarsStatusPill,
   type LcarsSystemStatus,
+  LcarsKeypad,
+  type LcarsKeypadKeyKind,
+  type LcarsChangeEventDetail,
+  type LcarsSubmitEventDetail,
 };
 
 // Register custom elements, guarded so a second evaluation of the module
@@ -82,3 +92,4 @@ define('lcars-panel', LcarsPanel);
 define('lcars-readout', LcarsReadout);
 define('lcars-bargraph', LcarsBargraph);
 define('lcars-status-pill', LcarsStatusPill);
+define('lcars-keypad', LcarsKeypad);

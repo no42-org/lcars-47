@@ -25,6 +25,10 @@ describe('public barrel exports', () => {
       'LcarsElbow',
       'LcarsButton',
       'LcarsPanel',
+      'LcarsReadout',
+      'LcarsBargraph',
+      'LcarsStatusPill',
+      'LcarsKeypad',
     ]) {
       expect(lcars, `missing export: ${name}`).toHaveProperty(name);
     }
@@ -32,5 +36,20 @@ describe('public barrel exports', () => {
 
   it('exposes LcarsAudio.mute() per SPEC CAP-3', () => {
     expect(typeof lcars.LcarsAudio.mute).toBe('function');
+  });
+
+  it('registers every documented custom element', () => {
+    for (const tag of [
+      'lcars-frame',
+      'lcars-elbow',
+      'lcars-button',
+      'lcars-panel',
+      'lcars-readout',
+      'lcars-bargraph',
+      'lcars-status-pill',
+      'lcars-keypad',
+    ]) {
+      expect(customElements.get(tag), `unregistered element: ${tag}`).toBeDefined();
+    }
   });
 });

@@ -75,8 +75,20 @@ describe('LCARS Distribution Package Contracts', () => {
 
     it('declares the public API in the type definitions', () => {
       const dts = distFile('index.d.ts') ?? '';
-      for (const symbol of ['LcarsAudio', 'LcarsFrame', 'LcarsBargraph', 'setLcarsTheme']) {
-        expect(dts, `index.d.ts does not declare ${symbol}`).toContain(symbol);
+      for (const symbol of [
+        'LcarsAudio',
+        'LcarsFrame',
+        'LcarsBargraph',
+        'LcarsKeypad',
+        'LcarsChangeEventDetail',
+        'LcarsSubmitEventDetail',
+        'setLcarsTheme',
+      ]) {
+        // Anchored to an export: a declaration that survives rollup but is no
+        // longer re-exported from the entry is the realistic failure mode.
+        expect(dts, `index.d.ts does not export ${symbol}`).toMatch(
+          new RegExp(`export[^\\n]*\\b${symbol}\\b|export \\{[^}]*\\b${symbol}\\b`)
+        );
       }
     });
 

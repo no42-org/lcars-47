@@ -14,6 +14,7 @@ Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user inte
 - **Era Color Palettes**: Switch instantly between `TNG` (The Next Generation), `DS9` (Deep Space Nine), `Nemesis` (Late 24th Century), and `High-Contrast` accessibility themes.
 - **Geometric Primitives**: Authentic curved elbows (`<lcars-elbow>`), responsive 2D grid layouts (`<lcars-frame>`), tactile pill buttons (`<lcars-button>`), and framed panels (`<lcars-panel>`).
 - **Telemetry & Data Displays**: High-precision tabular readouts (`<lcars-readout>`), segmented/continuous level gauges (`<lcars-bargraph>`), and status pills (`<lcars-status-pill>`). Lit batches property changes into a single render per microtask.
+- **Tactile Command Input**: An LCARS keypad grid (`<lcars-keypad>`) emitting typed `lcars-change` and `lcars-submit` events, fully operable from a physical keyboard.
 - **Self-Contained Typography**: Bundled local `@font-face` definitions for Antonio condensed sans-serif with zero remote CDN calls.
 - **Dual Bundle Distribution**: ESM module bundle for modern bundlers (Vite, Rollup, Webpack) and self-contained IIFE bundle for drop-in CDN `<script>` tag usage.
 
@@ -144,6 +145,45 @@ Segmented or continuous level meter with dynamic threshold color transitions. Se
 ### `<lcars-status-pill>`
 Diagnostic system state indicator with optional CSS pulse animations.
 - **Properties**: `status` (`'nominal' | 'warning' | 'alert' | 'offline' | 'standby'`), `label`, `code`, `blink`, `color`.
+
+### `<lcars-keypad>`
+Authentic LCARS key grid for numeric codes and command sequences, with per-keypress procedural audio.
+- **Properties**: `value` (the accumulated entry, default `''`), `maxlength` (default unlimited), `disabled` (default `false`), `color` (digit keys, default `primary`), `label` (accessible name for the grid, default `KEYPAD`), `sound` (per-keypress sound, default `input`; `silent` and `none` suppress all keypad audio).
+- **Events**: `lcars-change` (CustomEvent with `{ value, key }`, where `key` is the digit pressed, `'DEL'` or `'CLR'`) and `lcars-submit` (CustomEvent with `{ value }`). Both bubble and cross shadow boundaries.
+- **Slots**: none. The key grid is fixed; slotted content is not rendered.
+- **Keys**: digits `0`-`9`, `DEL` (delete last character), `CLR` (clear the entry), `ENTER` (submit).
+- **Feedback**: accepted keys play `sound`; a rejected key (`maxlength` reached) or a submit on an empty entry plays `deny`; a submit plays `acknowledge`. `DEL` and `CLR` on an empty entry are strict no-ops (no value change, no event, no sound).
+- **Custom properties**: `--lcars-keypad-gap`, `--lcars-keypad-key-min-width`, `--lcars-keypad-key-min-height`, `--lcars-keypad-command-color`, `--lcars-keypad-submit-color`, `--lcars-keypad-focus-color`, `--lcars-keypad-focus-inset`.
+- The entry is **not** cleared on submit; the host application decides when to reset it via `keypad.value = ''`.
+
+**`maxlength` semantics.** Only a positive number limits the entry. An omitted, empty, zero, negative or non-numeric `maxlength` means unlimited, so a stray `maxlength=""` cannot leave the keypad permanently inert. A `value` assigned programmatically is coerced to a string and truncated to the current limit, including when `maxlength` is lowered under an existing entry.
+
+**Keyboard.** Every key is a tab stop with a visible focus ring. Physical digits, `Backspace` (equivalent to `DEL`) and `Enter` (submit) work whenever the keypad has focus, with two caveats: `CLR` has no physical equivalent (tab to the key and press Enter or Space), and while a key itself holds focus `Enter` and `Space` activate *that* key rather than submitting. Auto-repeat is ignored, and chords carrying Ctrl, Cmd or Alt are left to the browser and the host application.
+
+```html
+<lcars-panel heading="AUTHORIZATION">
+  <lcars-keypad id="auth-pad" maxlength="6" color="secondary" sound="input"></lcars-keypad>
+</lcars-panel>
+```
+
+```typescript
+import type { LcarsChangeEventDetail, LcarsSubmitEventDetail } from '@no42-org/lcars-47';
+
+// A bare tag name resolves to LcarsKeypad through HTMLElementTagNameMap, so
+// `pad.value` is typed without a cast.
+const pad = document.querySelector('lcars-keypad');
+
+pad?.addEventListener('lcars-change', (event) => {
+  const { value, key } = (event as CustomEvent<LcarsChangeEventDetail>).detail;
+  console.log('buffer:', value, 'via', key);
+});
+
+pad?.addEventListener('lcars-submit', (event) => {
+  const { value } = (event as CustomEvent<LcarsSubmitEventDetail>).detail;
+  console.log('code entered:', value);
+  pad.value = '';
+});
+```
 
 ---
 

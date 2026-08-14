@@ -103,6 +103,20 @@
         accent-color: var(--lcars-color-primary, #ff9900);
         cursor: pointer;
       }
+
+      .keypad-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 20px;
+        margin-top: 8px;
+      }
+
+      .keypad-readouts {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
     </style>
   </head>
   <body>
@@ -222,8 +236,7 @@
                 label="HULL INTEGRITY"
                 value="100"
                 unit="%"
-                color="secondary"
-              ></lcars-readout>
+                    ></lcars-readout>
             </div>
 
             <lcars-bargraph
@@ -266,6 +279,36 @@
               <lcars-button shape="pill-start" color="secondary" sound="input">PILL START</lcars-button>
               <lcars-button shape="pill-end" color="butterscotch" sound="input">PILL END</lcars-button>
               <lcars-button shape="bracket" color="primary" sound="input">BRACKET</lcars-button>
+            </div>
+          </lcars-panel>
+
+          <!-- Panel 4: Command Input -->
+          <lcars-panel heading="AUTHORIZATION" subtitle="COMMAND INPUT">
+            <div class="keypad-row">
+              <lcars-keypad
+                id="auth-pad"
+                label="AUTHORIZATION CODE"
+                maxlength="6"
+                color="secondary"
+                sound="input"
+              ></lcars-keypad>
+
+              <div class="keypad-readouts">
+                <lcars-readout
+                  id="readout-code"
+                  label="ENTRY BUFFER"
+                  placeholder="------"
+                  color="primary"
+                  announce
+                ></lcars-readout>
+                <lcars-status-pill
+                  id="pill-auth"
+                  status="standby"
+                  code="47-K"
+                  label="AWAITING CODE"
+                ></lcars-status-pill>
+                <div class="section-label">DEMO ACCESS CODE: 471947</div>
+              </div>
             </div>
           </lcars-panel>
         </div>
@@ -343,6 +386,39 @@
         if (Number.isFinite(vol)) {
           setAudioVolume(vol);
         }
+      });
+
+      // Keypad command input. The keypad owns the entry state; the console
+      // just mirrors it and reacts to the confirmed code.
+      const authPad = document.getElementById('auth-pad');
+      const codeReadout = document.getElementById('readout-code');
+      const authPill = document.getElementById('pill-auth');
+      // Shown on screen next to the pad so the demo is actually completable.
+      const AUTH_CODE = '471947';
+      const codeLength = authPad?.maxLength ?? AUTH_CODE.length;
+
+      // One reset path for the buffer readout: '' falls back to its
+      // placeholder, so both handlers can use the keypad's own empty value.
+      function showBuffer(value) {
+        if (codeReadout) codeReadout.value = value;
+      }
+
+      authPad?.addEventListener('lcars-change', (e) => {
+        showBuffer(e.detail.value);
+        if (authPill) {
+          authPill.status = 'standby';
+          authPill.label = `${e.detail.value.length}/${codeLength} DIGITS`;
+        }
+      });
+
+      authPad?.addEventListener('lcars-submit', (e) => {
+        const accepted = e.detail.value === AUTH_CODE;
+        if (authPill) {
+          authPill.status = accepted ? 'nominal' : 'alert';
+          authPill.label = accepted ? 'ACCESS GRANTED' : 'CODE REJECTED';
+        }
+        authPad.value = '';
+        showBuffer(authPad.value);
       });
 
       // Telemetry Simulation Loop
