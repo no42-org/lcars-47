@@ -37,6 +37,7 @@ export {
   type LcarsAudioOptions,
   type LcarsSoundHandle,
   LcarsAudioSynthesizer,
+  LcarsAudio,
   getAudioSynthesizer,
   playLcarsSound,
   setAudioVolume,

@@ -114,6 +114,11 @@ export class LcarsReadout extends LcarsElement {
   @property({ type: String })
   align: LcarsReadoutAlign = 'left';
 
+  // Opt-in: a readout driven at telemetry rates would otherwise queue an
+  // announcement per frame and block all other screen-reader speech.
+  @property({ type: Boolean })
+  announce = false;
+
   private formatValue(): string {
     if (this.value === null || this.value === undefined) {
       return this.placeholder;
@@ -153,8 +158,8 @@ export class LcarsReadout extends LcarsElement {
       <div
         class="readout-container ${alignClass}"
         style="--readout-color: ${textColor};"
-        role="status"
-        aria-live="polite"
+        role="${this.announce ? 'status' : 'group'}"
+        aria-live="${this.announce ? 'polite' : 'off'}"
         aria-atomic="true"
         aria-label="${this.label ? `${this.label}: ` : ''}${displayValue}${this.unit ? ` ${this.unit}` : ''}"
       >

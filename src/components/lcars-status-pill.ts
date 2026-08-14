@@ -26,7 +26,7 @@ export class LcarsStatusPill extends LcarsElement {
       min-height: var(--lcars-bar-height-sm, 18px);
       border-radius: var(--lcars-radius-pill, 14px);
       background-color: var(--status-color, var(--lcars-color-primary));
-      color: #000000;
+      color: var(--status-fg, var(--lcars-color-on-accent, #000000));
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
@@ -36,12 +36,14 @@ export class LcarsStatusPill extends LcarsElement {
       gap: var(--lcars-gap-sm, 4px);
     }
 
+    /* Inverted chip: reuses the pill's own contrast-checked colour pair
+       instead of a translucent overlay that darkens the background. */
     .status-code {
       font-size: var(--lcars-font-size-xs, 0.75rem);
       padding: 1px 4px;
       border-radius: 2px;
-      background-color: rgba(0, 0, 0, 0.25);
-      color: #000000;
+      background-color: var(--status-fg, var(--lcars-color-on-accent, #000000));
+      color: var(--status-color, var(--lcars-color-primary));
       font-variant-numeric: tabular-nums;
     }
 
@@ -109,16 +111,35 @@ export class LcarsStatusPill extends LcarsElement {
     }
   }
 
+  /**
+   * Foreground paired with each status colour so 0.75rem bold text stays above
+   * the 4.5:1 WCAG AA threshold. Dark states (alert, offline) need light text.
+   */
+  private get statusForegroundToken(): string {
+    if (this.color) {
+      return 'var(--lcars-color-on-accent, #000000)';
+    }
+
+    switch (this.status) {
+      case 'alert':
+      case 'offline':
+        return 'var(--lcars-color-on-accent-inverse, #ffffff)';
+      default:
+        return 'var(--lcars-color-on-accent, #000000)';
+    }
+  }
+
   override render(): TemplateResult {
     const isBlinking = this.blink || this.status === 'alert';
     const blinkClass = isBlinking ? 'blinking' : '';
     const colorStyle = this.statusColorToken;
+    const fgStyle = this.statusForegroundToken;
     const displayLabel = this.label || this.status;
 
     return html`
       <div
         class="status-pill ${blinkClass}"
-        style="--status-color: ${colorStyle};"
+        style="--status-color: ${colorStyle}; --status-fg: ${fgStyle};"
         role="status"
         aria-label="System status: ${this.status}${this.code ? ` (${this.code})` : ''} - ${displayLabel}"
       >

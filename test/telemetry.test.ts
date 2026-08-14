@@ -59,6 +59,22 @@ describe('LCARS Telemetry & Data Displays', () => {
       expect(container?.classList.contains('align-right')).toBe(true);
     });
 
+    it('stays silent for assistive tech unless announcing is opted into', async () => {
+      const readout = document.createElement('lcars-readout') as LcarsReadout;
+      readout.value = 42;
+      document.body.appendChild(readout);
+      await readout.updateComplete;
+
+      const container = () => readout.shadowRoot?.querySelector('.readout-container');
+      expect(container()?.getAttribute('aria-live')).toBe('off');
+      expect(container()?.getAttribute('role')).toBe('group');
+
+      readout.announce = true;
+      await readout.updateComplete;
+      expect(container()?.getAttribute('aria-live')).toBe('polite');
+      expect(container()?.getAttribute('role')).toBe('status');
+    });
+
     it('safely clamps extreme precision values', async () => {
       const readout = document.createElement('lcars-readout') as LcarsReadout;
       readout.value = 3.14159265;
@@ -147,7 +163,7 @@ describe('LCARS Telemetry & Data Displays', () => {
 
     it('supports continuous mode and vertical orientation', async () => {
       const bar = document.createElement('lcars-bargraph') as LcarsBargraph;
-      bar.segmented = false;
+      bar.continuous = true;
       bar.orientation = 'vertical';
       bar.value = 40;
       document.body.appendChild(bar);
@@ -156,6 +172,59 @@ describe('LCARS Telemetry & Data Displays', () => {
       const continuousBar = bar.shadowRoot?.querySelector('.continuous-bar');
       expect(continuousBar?.classList.contains('vertical')).toBe(true);
       expect(continuousBar?.getAttribute('style')).toContain('height: 40%;');
+    });
+
+    it('reaches continuous mode declaratively from markup', async () => {
+      document.body.innerHTML = '<lcars-bargraph continuous value="40"></lcars-bargraph>';
+      const bar = document.body.firstElementChild as LcarsBargraph;
+      await bar.updateComplete;
+
+      expect(bar.continuous).toBe(true);
+      expect(bar.shadowRoot?.querySelector('.continuous-bar')).not.toBeNull();
+      expect(bar.shadowRoot?.querySelectorAll('.segment').length).toBe(0);
+
+      // Absent attribute must keep the segmented default
+      document.body.innerHTML = '<lcars-bargraph value="40"></lcars-bargraph>';
+      const segBar = document.body.firstElementChild as LcarsBargraph;
+      await segBar.updateComplete;
+      expect(segBar.continuous).toBe(false);
+      expect(segBar.shadowRoot?.querySelectorAll('.segment').length).toBe(10);
+    });
+
+    it('distinguishes empty, low-but-nonzero, near-full, and full readings', async () => {
+      const bar = document.createElement('lcars-bargraph') as LcarsBargraph;
+      bar.segments = 10;
+      bar.value = 0;
+      document.body.appendChild(bar);
+      await bar.updateComplete;
+      const filled = () => bar.shadowRoot?.querySelectorAll('.segment.filled').length;
+
+      expect(filled()).toBe(0);
+
+      // 4% must not read as empty
+      bar.value = 4;
+      await bar.updateComplete;
+      expect(filled()).toBe(1);
+
+      // 96% must not read as full
+      bar.value = 96;
+      await bar.updateComplete;
+      expect(filled()).toBe(9);
+
+      bar.value = 100;
+      await bar.updateComplete;
+      expect(filled()).toBe(10);
+    });
+
+    it('exposes a sanitized aria range for non-numeric min/max', async () => {
+      document.body.innerHTML = '<lcars-bargraph max="abc" min="xyz" value="50"></lcars-bargraph>';
+      const bar = document.body.firstElementChild as LcarsBargraph;
+      await bar.updateComplete;
+
+      const wrapper = bar.shadowRoot?.querySelector('.bargraph-wrapper');
+      expect(wrapper?.getAttribute('aria-valuemax')).toBe('100');
+      expect(wrapper?.getAttribute('aria-valuemin')).toBe('0');
+      expect(wrapper?.getAttribute('aria-valuenow')).not.toContain('NaN');
     });
   });
 
@@ -175,7 +244,27 @@ describe('LCARS Telemetry & Data Displays', () => {
       expect(labelEl?.textContent).toBe('ONLINE');
 
       const inner = pill.shadowRoot?.querySelector('.status-pill');
-      expect(inner?.getAttribute('style')).toBe('--status-color: var(--lcars-color-primary, #ff9900);');
+      expect(inner?.getAttribute('style')).toContain('--status-color: var(--lcars-color-primary, #ff9900);');
+    });
+
+    it('pairs a contrast-safe foreground with each status colour', async () => {
+      const pill = document.createElement('lcars-status-pill') as LcarsStatusPill;
+      document.body.appendChild(pill);
+      const style = () => pill.shadowRoot?.querySelector('.status-pill')?.getAttribute('style') ?? '';
+
+      // Bright backgrounds keep dark text
+      for (const status of ['nominal', 'warning', 'standby'] as const) {
+        pill.status = status;
+        await pill.updateComplete;
+        expect(style(), status).toContain('--status-fg: var(--lcars-color-on-accent, #000000);');
+      }
+
+      // Dark backgrounds need light text
+      for (const status of ['alert', 'offline'] as const) {
+        pill.status = status;
+        await pill.updateComplete;
+        expect(style(), status).toContain('--status-fg: var(--lcars-color-on-accent-inverse, #ffffff);');
+      }
     });
 
     it('renders offline and standby states correctly', async () => {
