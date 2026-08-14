@@ -1,0 +1,38 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+version: 2
+updates:
+  # Required: this is what rewrites the SHA pins in .github/workflows AND their
+  # version comments. Without it, pinning rots into permanently stale actions.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    groups:
+      # One reviewable PR for the safe bumps; majors still arrive individually
+      # so a breaking change is never buried in a group.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # lit is the one runtime dependency and is externalized from the ESM
+      # bundle, so a major bump is a consumer-visible peer change. Handle it
+      # deliberately rather than as a routine PR.
+      - dependency-name: lit
+        update-types: [version-update:semver-major]
