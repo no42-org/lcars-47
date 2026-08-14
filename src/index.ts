@@ -5,60 +5,26 @@
 
 import './tokens/index.css';
 
-export const VERSION = '0.1.0';
+// Export Themes & Utilities
+export {
+  VERSION,
+  LCARS_THEMES,
+  LCARS_THEME_ALIASES,
+  type LcarsEraTheme,
+  type LcarsThemeAlias,
+  type LcarsThemeName,
+  resolveLcarsTheme,
+  setLcarsTheme,
+  getLcarsTheme,
+} from './theme';
 
-export type LcarsEraTheme = 'tng' | 'ds9' | 'nemesis' | 'contrast';
-
-export type LcarsThemeAlias = 'voyager' | 'refit' | 'accessible';
-
-export type LcarsThemeName = LcarsEraTheme | LcarsThemeAlias;
-
-export const LCARS_THEMES: readonly LcarsEraTheme[] = ['tng', 'ds9', 'nemesis', 'contrast'] as const;
-
-export const LCARS_THEME_ALIASES: Readonly<Record<LcarsThemeAlias, LcarsEraTheme>> = {
-  voyager: 'ds9',
-  refit: 'nemesis',
-  accessible: 'contrast',
-} as const;
-
-/**
- * Resolve a theme or alias name to the canonical era theme identifier.
- */
-export function resolveLcarsTheme(themeName: string): LcarsEraTheme {
-  if (LCARS_THEMES.includes(themeName as LcarsEraTheme)) {
-    return themeName as LcarsEraTheme;
-  }
-  if (Object.hasOwn(LCARS_THEME_ALIASES, themeName)) {
-    return LCARS_THEME_ALIASES[themeName as LcarsThemeAlias];
-  }
-  return 'tng';
-}
-
-/**
- * Apply an LCARS era theme to an element or root document.
- */
-export function setLcarsTheme(
-  theme: LcarsThemeName,
-  target?: HTMLElement | null
-): void {
-  const el = target ?? (typeof document !== 'undefined' ? document.documentElement : null);
-  if (!el) {
-    return;
-  }
-  const resolved = resolveLcarsTheme(theme);
-  el.setAttribute('data-lcars-theme', resolved);
-}
-
-/**
- * Retrieve current active LCARS era theme from an element or root document.
- */
-export function getLcarsTheme(
-  target?: HTMLElement | null
-): LcarsEraTheme {
-  const el = target ?? (typeof document !== 'undefined' ? document.documentElement : null);
-  if (!el) {
-    return 'tng';
-  }
-  const current = el.getAttribute('data-lcars-theme');
-  return current ? resolveLcarsTheme(current) : 'tng';
-}
+// Export Components & Event Types
+export { LcarsElement } from './components/base';
+export { LcarsFrame } from './components/lcars-frame';
+export { LcarsElbow, type LcarsElbowDirection } from './components/lcars-elbow';
+export {
+  LcarsButton,
+  type LcarsButtonShape,
+  type LcarsClickEventDetail,
+} from './components/lcars-button';
+export { LcarsPanel } from './components/lcars-panel';

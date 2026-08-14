@@ -1,0 +1,225 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+import { html, css, type TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { LcarsElement } from './base';
+
+export type LcarsElbowDirection = 'top-left' | 'bottom-left' | 'top-right' | 'bottom-right';
+
+/**
+ * `<lcars-elbow>` renders an authentic curved LCARS L-shape corner block.
+ */
+@customElement('lcars-elbow')
+export class LcarsElbow extends LcarsElement {
+  static override styles = css`
+    :host {
+      display: inline-block;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    .elbow-container {
+      display: flex;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Top-Left */
+    .elbow-container.top-left {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .elbow-container.top-left .top-row {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .elbow-container.top-left .arch {
+      width: var(--lcars-sidebar-width, 160px);
+      height: var(--lcars-elbow-height, 60px);
+      border-top-left-radius: var(--lcars-radius-elbow, 28px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    .elbow-container.top-left .bar-extension {
+      flex: 1;
+      height: var(--lcars-bar-height, 28px);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    /* Bottom-Left */
+    .elbow-container.bottom-left {
+      flex-direction: column-reverse;
+      align-items: flex-start;
+    }
+
+    .elbow-container.bottom-left .bottom-row {
+      display: flex;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    .elbow-container.bottom-left .arch {
+      width: var(--lcars-sidebar-width, 160px);
+      height: var(--lcars-elbow-height, 60px);
+      border-bottom-left-radius: var(--lcars-radius-elbow, 28px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    .elbow-container.bottom-left .bar-extension {
+      flex: 1;
+      height: var(--lcars-bar-height, 28px);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    /* Top-Right */
+    .elbow-container.top-right {
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .elbow-container.top-right .top-row {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .elbow-container.top-right .arch {
+      width: var(--lcars-sidebar-width, 160px);
+      height: var(--lcars-elbow-height, 60px);
+      border-top-right-radius: var(--lcars-radius-elbow, 28px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    .elbow-container.top-right .bar-extension {
+      flex: 1;
+      height: var(--lcars-bar-height, 28px);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    /* Bottom-Right */
+    .elbow-container.bottom-right {
+      flex-direction: column-reverse;
+      align-items: flex-end;
+    }
+
+    .elbow-container.bottom-right .bottom-row {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    .elbow-container.bottom-right .arch {
+      width: var(--lcars-sidebar-width, 160px);
+      height: var(--lcars-elbow-height, 60px);
+      border-bottom-right-radius: var(--lcars-radius-elbow, 28px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    .elbow-container.bottom-right .bar-extension {
+      flex: 1;
+      height: var(--lcars-bar-height, 28px);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
+    }
+
+    .title-text {
+      font-family: var(--lcars-font-family, 'Antonio', sans-serif);
+      font-size: var(--lcars-font-size-sm, 0.875rem);
+      font-weight: bold;
+      letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
+      text-transform: uppercase;
+      color: #000000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .label-text {
+      font-family: var(--lcars-font-family, 'Antonio', sans-serif);
+      font-size: var(--lcars-font-size-xs, 0.75rem);
+      font-weight: bold;
+      letter-spacing: var(--lcars-letter-spacing-widest, 0.12em);
+      text-transform: uppercase;
+      color: #000000;
+      white-space: nowrap;
+    }
+  `;
+
+  @property({ type: String, reflect: true })
+  dir: LcarsElbowDirection = 'top-left';
+
+  @property({ type: String })
+  color = 'primary';
+
+  @property({ type: String })
+  override title = '';
+
+  @property({ type: String })
+  label = '';
+
+  override render(): TemplateResult {
+    const bgColor = this.resolveColor(this.color, '--lcars-color-primary');
+    const directionClass = ['top-left', 'bottom-left', 'top-right', 'bottom-right'].includes(this.dir)
+      ? this.dir
+      : 'top-left';
+
+    const isTop = directionClass.startsWith('top');
+    const rowClass = isTop ? 'top-row' : 'bottom-row';
+
+    return html`
+      <div class="elbow-container ${directionClass}">
+        <div class="${rowClass}">
+          <div class="arch" style="background-color: ${bgColor};">
+            ${this.label ? html`<span class="label-text">${this.label}</span>` : html`<slot name="label"></slot>`}
+          </div>
+          <div class="bar-extension" style="background-color: ${bgColor};">
+            ${this.title ? html`<span class="title-text">${this.title}</span>` : html`<slot></slot>`}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'lcars-elbow': LcarsElbow;
+  }
+}
