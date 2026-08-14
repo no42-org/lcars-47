@@ -1,0 +1,374 @@
+<!doctype html>
+<!--
+  Copyright 2026 Ronny Trommer <ronny@no42.org>
+  SPDX-License-Identifier: Apache-2.0
+-->
+<html lang="en" data-lcars-theme="tng">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LCARS 47 - Tactical & Engineering Interface</title>
+    <link rel="stylesheet" href="/src/tokens/index.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000000;
+        color: #ff9900;
+        font-family: 'Antonio', sans-serif;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .app-container {
+        width: 100vw;
+        height: 100vh;
+        padding: 12px;
+        box-sizing: border-box;
+      }
+
+      .top-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        font-size: 1.1rem;
+        font-weight: bold;
+        letter-spacing: 0.15em;
+        padding: 0 16px;
+        box-sizing: border-box;
+      }
+
+      .sidebar-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 10px;
+        width: 100%;
+      }
+
+      .section-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        letter-spacing: 0.1em;
+        color: var(--lcars-color-secondary, #cc99cc);
+        margin-top: 8px;
+        margin-bottom: 2px;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 8px;
+        box-sizing: border-box;
+      }
+
+      .telemetry-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      .status-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .volume-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-size: 0.8rem;
+        font-weight: bold;
+      }
+
+      .volume-slider {
+        accent-color: var(--lcars-color-primary, #ff9900);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <lcars-frame theme="tng" id="workbench-frame">
+        <!-- Top Left Elbow -->
+        <lcars-elbow
+          slot="elbow-tl"
+          direction="top-left"
+          heading="LCARS 47"
+          label="TACTICAL CONSOLE"
+        ></lcars-elbow>
+
+        <!-- Top Header Bar -->
+        <div slot="top-bar" class="top-header">
+          <span>USS ENTERPRISE // NCC-1701-D</span>
+          <span id="stardate-display">STARDATE 47920.4</span>
+        </div>
+
+        <!-- Left Sidebar -->
+        <div slot="sidebar" class="sidebar-controls">
+          <div class="section-label">ERA PALETTES</div>
+          <lcars-button id="btn-theme-tng" color="primary" sound="input">TNG ERA</lcars-button>
+          <lcars-button id="btn-theme-ds9" color="ice-blue" sound="input">DS9 ERA</lcars-button>
+          <lcars-button id="btn-theme-nemesis" color="teal" sound="input">NEMESIS</lcars-button>
+          <lcars-button id="btn-theme-contrast" color="amber" sound="input">CONTRAST</lcars-button>
+
+          <div class="section-label">AUDIO CONTROL</div>
+          <lcars-button id="btn-mute" color="warning" sound="input">MUTE AUDIO</lcars-button>
+          <div class="volume-control">
+            <span>VOL:</span>
+            <input
+              type="range"
+              id="volume-slider"
+              class="volume-slider"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.5"
+            />
+          </div>
+
+          <div class="section-label">SIMULATION</div>
+          <lcars-button id="btn-sim" color="secondary" sound="acknowledge">PAUSE TELEMETRY</lcars-button>
+        </div>
+
+        <!-- Main Workspace -->
+        <div slot="main" class="main-grid">
+          <!-- Panel 1: Propulsion & Warp Core -->
+          <lcars-panel heading="PROPULSION DYNAMICS" subtitle="PRIMARY WARP SYSTEM">
+            <div class="telemetry-row">
+              <lcars-readout
+                id="readout-warp"
+                label="WARP FACTOR"
+                value="9.94"
+                unit="WF"
+                precision="2"
+                color="primary"
+              ></lcars-readout>
+              <lcars-readout
+                id="readout-antimatter"
+                label="ANTIMATTER MIX"
+                value="49.8"
+                unit="%"
+                precision="1"
+                color="butterscotch"
+              ></lcars-readout>
+              <lcars-readout
+                id="readout-power"
+                label="WARP OUTPUT"
+                value="4750"
+                unit="MW"
+                color="lilac"
+              ></lcars-readout>
+            </div>
+
+            <lcars-bargraph
+              id="gauge-warp-core"
+              label="WARP CORE CONTAINMENT FIELD"
+              value="82"
+              max="100"
+              segments="16"
+              show-value
+              unit="%"
+              warning-threshold="88"
+              alert-threshold="95"
+            ></lcars-bargraph>
+
+            <div style="margin-top: 10px;"></div>
+
+            <lcars-bargraph
+              id="gauge-plasma"
+              label="PLASMA INJECTOR HARMONICS"
+              value="65"
+              max="100"
+              segments="16"
+              show-value
+              unit="%"
+              warning-threshold="80"
+              alert-threshold="92"
+            ></lcars-bargraph>
+          </lcars-panel>
+
+          <!-- Panel 2: Tactical Defenses -->
+          <lcars-panel heading="TACTICAL STATUS" subtitle="DEFLECTOR & ARMAMENTS">
+            <div class="telemetry-row">
+              <lcars-readout
+                id="readout-shields"
+                label="SHIELD CAPACITY"
+                value="98"
+                unit="%"
+                color="primary"
+              ></lcars-readout>
+              <lcars-readout
+                id="readout-hull"
+                label="HULL INTEGRITY"
+                value="100"
+                unit="%"
+                color="secondary"
+              ></lcars-readout>
+            </div>
+
+            <lcars-bargraph
+              id="gauge-shields"
+              label="FORWARD DEFLECTOR ARRAY"
+              value="94"
+              max="100"
+              continuous
+              show-value
+              unit="%"
+              color="primary"
+            ></lcars-bargraph>
+
+            <div class="section-label">DIAGNOSTIC STATUS</div>
+            <div class="status-group">
+              <lcars-status-pill id="pill-shields" status="nominal" code="01-A" label="SHIELDS ONLINE"></lcars-status-pill>
+              <lcars-status-pill id="pill-phasers" status="nominal" code="02-B" label="PHASERS READY"></lcars-status-pill>
+              <lcars-status-pill id="pill-torpedoes" status="standby" code="03-C" label="TORPEDO BAY"></lcars-status-pill>
+              <lcars-status-pill id="pill-subspace" status="nominal" code="04-D" label="SUBSPACE COMM"></lcars-status-pill>
+            </div>
+          </lcars-panel>
+
+          <!-- Panel 3: Procedural Audio Soundboard -->
+          <lcars-panel heading="ACOUSTIC SUBSYSTEM" subtitle="PROCEDURAL SOUNDBOARD">
+            <div class="section-label">SYNTHESIZED WAVEFORMS</div>
+            <div class="button-group">
+              <lcars-button id="btn-sound-chirp" sound="chirp" color="primary">CHIRP</lcars-button>
+              <lcars-button id="btn-sound-ack" sound="acknowledge" color="butterscotch">ACKNOWLEDGE</lcars-button>
+              <lcars-button id="btn-sound-warn" sound="warning" color="warning">WARNING</lcars-button>
+              <lcars-button id="btn-sound-alert" sound="alert" color="alert">RED ALERT</lcars-button>
+              <lcars-button id="btn-sound-input" sound="input" color="lilac">INPUT TICK</lcars-button>
+              <lcars-button id="btn-sound-deny" sound="deny" color="primary">DENY</lcars-button>
+              <lcars-button id="btn-sound-beep" sound="beep" color="secondary">BEEP</lcars-button>
+              <lcars-button id="btn-sound-warp" sound="warp" color="ice-blue">WARP SWEEP</lcars-button>
+            </div>
+
+            <div class="section-label" style="margin-top: 14px;">TACTILE BUTTON SHAPES</div>
+            <div class="button-group">
+              <lcars-button shape="pill" color="primary" sound="input">PILL SHAPE</lcars-button>
+              <lcars-button shape="pill-start" color="secondary" sound="input">PILL START</lcars-button>
+              <lcars-button shape="pill-end" color="butterscotch" sound="input">PILL END</lcars-button>
+              <lcars-button shape="bracket" color="primary" sound="input">BRACKET</lcars-button>
+            </div>
+          </lcars-panel>
+        </div>
+
+        <!-- Footer Elements -->
+        <div slot="footer-readout">SYSTEM STATUS: ALL DECKS NOMINAL // EPS GRID BALANCED</div>
+        <lcars-elbow slot="elbow-br" direction="bottom-right" label="GRID OK"></lcars-elbow>
+      </lcars-frame>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script type="module">
+      import {
+        setLcarsTheme,
+        setAudioVolume,
+        muteAudio,
+        unmuteAudio,
+        isAudioMuted,
+      } from './src/index.ts';
+
+      // Theme controls
+      document.getElementById('btn-theme-tng')?.addEventListener('lcars-click', () => {
+        setLcarsTheme('tng');
+      });
+      document.getElementById('btn-theme-ds9')?.addEventListener('lcars-click', () => {
+        setLcarsTheme('ds9');
+      });
+      document.getElementById('btn-theme-nemesis')?.addEventListener('lcars-click', () => {
+        setLcarsTheme('nemesis');
+      });
+      document.getElementById('btn-theme-contrast')?.addEventListener('lcars-click', () => {
+        setLcarsTheme('contrast');
+      });
+
+      // Audio controls
+      const muteBtn = document.getElementById('btn-mute');
+      muteBtn?.addEventListener('lcars-click', () => {
+        if (isAudioMuted()) {
+          unmuteAudio();
+          muteBtn.textContent = 'MUTE AUDIO';
+          muteBtn.color = 'warning';
+        } else {
+          muteAudio();
+          muteBtn.textContent = 'UNMUTE AUDIO';
+          muteBtn.color = 'alert';
+        }
+      });
+
+      const volumeSlider = document.getElementById('volume-slider');
+      volumeSlider?.addEventListener('input', (e) => {
+        const vol = parseFloat(e.target.value);
+        if (Number.isFinite(vol)) {
+          setAudioVolume(vol);
+        }
+      });
+
+      // Telemetry Simulation Loop
+      let simRunning = true;
+      const simBtn = document.getElementById('btn-sim');
+      simBtn?.addEventListener('lcars-click', () => {
+        simRunning = !simRunning;
+        simBtn.textContent = simRunning ? 'PAUSE TELEMETRY' : 'RESUME TELEMETRY';
+        simBtn.color = simRunning ? 'secondary' : 'warning';
+      });
+
+      const warpReadout = document.getElementById('readout-warp');
+      const antimatterReadout = document.getElementById('readout-antimatter');
+      const powerReadout = document.getElementById('readout-power');
+      const shieldReadout = document.getElementById('readout-shields');
+      const warpGauge = document.getElementById('gauge-warp-core');
+      const plasmaGauge = document.getElementById('gauge-plasma');
+      const shieldsGauge = document.getElementById('gauge-shields');
+      const stardateDisplay = document.getElementById('stardate-display');
+
+      let stardate = 47920.4;
+      let tick = 0;
+
+      function updateTelemetry() {
+        if (simRunning) {
+          tick += 0.05;
+          stardate += 0.001;
+
+          // Modulate telemetry values smoothly
+          const warpVal = 9.9 + 0.08 * Math.sin(tick * 0.7);
+          const antimatterVal = 49.5 + 1.2 * Math.cos(tick * 0.5);
+          const powerVal = Math.round(4700 + 120 * Math.sin(tick * 0.3));
+          const warpCoreVal = Math.round(80 + 12 * Math.sin(tick * 0.4));
+          const plasmaVal = Math.round(65 + 15 * Math.cos(tick * 0.6));
+          const shieldsVal = Math.round(95 + 4 * Math.sin(tick * 0.2));
+
+          if (warpReadout) warpReadout.value = warpVal;
+          if (antimatterReadout) antimatterReadout.value = antimatterVal;
+          if (powerReadout) powerReadout.value = powerVal;
+          if (shieldReadout) shieldReadout.value = shieldsVal;
+          if (warpGauge) warpGauge.value = warpCoreVal;
+          if (plasmaGauge) plasmaGauge.value = plasmaVal;
+          if (shieldsGauge) shieldsGauge.value = shieldsVal;
+          if (stardateDisplay) stardateDisplay.textContent = `STARDATE ${stardate.toFixed(1)}`;
+        }
+
+        requestAnimationFrame(updateTelemetry);
+      }
+
+      requestAnimationFrame(updateTelemetry);
+    </script>
+  </body>
+</html>

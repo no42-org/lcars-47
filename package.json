@@ -17,7 +17,9 @@
     },
     "./css": "./dist/lcars.css",
     "./tokens": "./dist/lcars.css",
-    "./iife": "./dist/lcars.iife.js"
+    "./iife": "./dist/lcars.iife.js",
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   },
   "sideEffects": [
     "*.css",
@@ -47,7 +49,7 @@
     "vite-plugin-lib-inject-css": "^2.2.2",
     "vitest": "^2.1.8"
   },
-  "license": "LGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "author": "Ronny Trommer <ronny@no42.org>",
   "dependencies": {
     "lit": "^3.3.3"

@@ -1,40 +1,53 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: LGPL-3.0-or-later
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-// Build smoke check: all four dist artifacts exist, the ES entry externalizes
-// lit, and the IIFE bundle is self-contained (no module syntax).
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const dist = resolve(import.meta.dirname, '../dist');
+const baseDir =
+  typeof import.meta.dirname === 'string'
+    ? import.meta.dirname
+    : fileURLToPath(new URL('.', import.meta.url));
+
+const root = resolve(baseDir, '..');
+const dist = resolve(root, 'dist');
+
+const required = ['index.js', 'lcars.iife.js', 'lcars.css', 'index.d.ts'];
 const errors = [];
 
-const read = (name) => {
-  try {
-    return readFileSync(resolve(dist, name), 'utf8');
-  } catch {
-    errors.push(`missing artifact: dist/${name}`);
-    return null;
+for (const f of required) {
+  const p = resolve(dist, f);
+  if (!existsSync(p)) {
+    errors.push(`missing dist/${f}`);
+  } else {
+    const stats = statSync(p);
+    if (stats.size === 0) {
+      errors.push(`dist/${f} is empty (0 bytes)`);
+    }
   }
+}
+
+const read = (name) => {
+  const p = resolve(dist, name);
+  return existsSync(p) ? readFileSync(p, 'utf8') : null;
 };
 
-const esm = read('index.js');
+const es = read('index.js');
+if (es && !/from\s*['"]lit(\/.*)?['"]/.test(es)) {
+  errors.push('dist/index.js does not seem to externalize lit (no import from "lit" found)');
+}
+
 const iife = read('lcars.iife.js');
-read('lcars.css');
-read('index.d.ts');
-
-if (esm && !/from\s*["']lit["']/.test(esm)) {
-  errors.push('dist/index.js does not import lit — externalization broken');
-}
-if (iife && /^\s*import\s/m.test(iife)) {
-  errors.push('dist/lcars.iife.js contains top-level import — not self-contained');
+if (iife && (/^\s*import\b/m.test(iife) || /^\s*export\b/m.test(iife))) {
+  errors.push('dist/lcars.iife.js contains top-level import/export; expected self-contained IIFE');
 }
 
-if (errors.length > 0) {
-  console.error('verify-dist FAILED:');
-  for (const e of errors) console.error(`  - ${e}`);
+if (errors.length) {
+  console.error('verify-dist FAILED:\n - ' + errors.join('\n - '));
   process.exit(1);
 }
-console.log('verify-dist OK: 4 artifacts present, ES externalizes lit, IIFE self-contained');
+
+console.log('verify-dist OK: 4 artifacts present and non-empty, ES externalizes lit, IIFE self-contained');

@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: LGPL-3.0-or-later
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 import { html, css, type TemplateResult } from 'lit';
@@ -75,6 +75,9 @@ export class LcarsPanel extends LcarsElement {
   @property({ type: String })
   heading = '';
 
+  @property({ type: String, attribute: 'title' })
+  panelTitle = '';
+
   @property({ type: String })
   subtitle = '';
 
@@ -84,19 +87,24 @@ export class LcarsPanel extends LcarsElement {
   @property({ type: Boolean, reflect: true, attribute: 'no-border' })
   noBorder = false;
 
+  private get displayHeading(): string {
+    return this.panelTitle || this.heading;
+  }
+
   override render(): TemplateResult {
     const accentColor = this.resolveColor(this.color, '--lcars-color-secondary');
     const borderClass = this.noBorder ? '' : 'bordered';
+    const headerTitle = this.displayHeading;
 
     return html`
       <div
         class="panel-container ${borderClass}"
         style="--panel-color: ${accentColor};"
       >
-        ${this.heading || this.subtitle
+        ${headerTitle || this.subtitle
           ? html`
               <div class="panel-header">
-                <span class="panel-title">${this.heading}</span>
+                <span class="panel-title">${headerTitle}</span>
                 ${this.subtitle ? html`<span class="panel-subtitle">${this.subtitle}</span>` : ''}
               </div>
             `

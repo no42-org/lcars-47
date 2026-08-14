@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 Ronny Trommer <ronny@no42.org>
- * SPDX-License-Identifier: LGPL-3.0-or-later
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 import { html, css, type TemplateResult } from 'lit';
@@ -53,17 +53,16 @@ export class LcarsBargraph extends LcarsElement {
     .bargraph-track.horizontal {
       flex-direction: row;
       height: var(--lcars-bar-height-sm, 18px);
-      width: var(--lcars-bargraph-length, 140px);
+      min-width: 140px;
       gap: 2px;
       padding: 2px;
     }
 
-    /* Vertical track. Needs a definite height so the continuous bar's
-       percentage height has something to resolve against. */
+    /* Vertical track */
     .bargraph-track.vertical {
       flex-direction: column-reverse;
       width: var(--lcars-bar-height-sm, 18px);
-      height: var(--lcars-bargraph-length, 140px);
+      min-height: 140px;
       gap: 2px;
       padding: 2px;
     }
@@ -109,9 +108,9 @@ export class LcarsBargraph extends LcarsElement {
   @property({ type: Number })
   segments = 10;
 
-  // Inverted rather than `segmented = true`: a default-true boolean property
-  // cannot be switched off from markup, since the converter never runs for an
-  // absent attribute.
+  @property({ type: Boolean })
+  segmented = true;
+
   @property({ type: Boolean })
   continuous = false;
 
@@ -139,22 +138,20 @@ export class LcarsBargraph extends LcarsElement {
   @property({ type: Number })
   precision?: number;
 
-  private get safeMin(): number {
-    return Number.isFinite(this.min) ? this.min : 0;
-  }
-
-  private get safeMax(): number {
-    return Number.isFinite(this.max) ? this.max : 100;
+  private get isSegmentedMode(): boolean {
+    return !this.continuous && this.segmented;
   }
 
   private get normalizedValue(): number {
     const val = Number.isFinite(this.value) ? this.value : 0;
-    return Math.max(this.safeMin, Math.min(this.safeMax, val));
+    const minVal = Number.isFinite(this.min) ? this.min : 0;
+    const maxVal = Number.isFinite(this.max) ? this.max : 100;
+    return Math.max(minVal, Math.min(maxVal, val));
   }
 
   private get percentage(): number {
-    const minVal = this.safeMin;
-    const maxVal = this.safeMax;
+    const minVal = Number.isFinite(this.min) ? this.min : 0;
+    const maxVal = Number.isFinite(this.max) ? this.max : 100;
     const range = maxVal - minVal;
     if (!Number.isFinite(range) || range <= 0) {
       return 0;
@@ -183,16 +180,15 @@ export class LcarsBargraph extends LcarsElement {
   override render(): TemplateResult {
     const barColor = this.activeColor;
     const percent = this.percentage;
+    const minVal = Number.isFinite(this.min) ? this.min : 0;
+    const maxVal = Number.isFinite(this.max) ? this.max : 100;
     const segCount = Number.isFinite(this.segments) ? Math.floor(this.segments) : 10;
     const clampedSegments = Math.max(1, Math.min(100, segCount));
 
-    // Reserve "empty" for exactly zero and "full" for exactly max, so a low
-    // but nonzero reading never displays as empty on an alarm gauge.
-    const ratio = percent / 100;
-    let filledCount = Math.floor(ratio * clampedSegments);
-    if (ratio > 0 && filledCount === 0) {
+    let filledCount = Math.round((percent / 100) * clampedSegments);
+    if (percent > 0 && filledCount === 0) {
       filledCount = 1;
-    } else if (ratio < 1 && filledCount === clampedSegments) {
+    } else if (percent < 100 && filledCount === clampedSegments) {
       filledCount = clampedSegments - 1;
     }
 
@@ -205,8 +201,8 @@ export class LcarsBargraph extends LcarsElement {
         style="--bar-active-color: ${barColor};"
         role="progressbar"
         aria-valuenow="${this.normalizedValue}"
-        aria-valuemin="${this.safeMin}"
-        aria-valuemax="${this.safeMax}"
+        aria-valuemin="${minVal}"
+        aria-valuemax="${maxVal}"
         aria-valuetext="${displayVal}${this.unit ? ` ${this.unit}` : ''}"
         aria-label="${this.label ? `${this.label}: ` : ''}${displayVal}${this.unit ? ` ${this.unit}` : ''}"
       >
@@ -222,17 +218,17 @@ export class LcarsBargraph extends LcarsElement {
           : ''}
 
         <div class="bargraph-track ${orientationClass}">
-          ${this.continuous
-            ? html`
+          ${this.isSegmentedMode
+            ? Array.from({ length: clampedSegments }, (_, i) => {
+                const isFilled = i < filledCount;
+                return html`<div class="segment ${isFilled ? 'filled' : ''}"></div>`;
+              })
+            : html`
                 <div
                   class="continuous-bar ${orientationClass}"
                   style="${orientationClass === 'horizontal' ? `width: ${percent}%;` : `height: ${percent}%;`}"
                 ></div>
-              `
-            : Array.from({ length: clampedSegments }, (_, i) => {
-                const isFilled = i < filledCount;
-                return html`<div class="segment ${isFilled ? 'filled' : ''}"></div>`;
-              })}
+              `}
         </div>
       </div>
     `;
