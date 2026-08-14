@@ -137,11 +137,16 @@ export class LcarsButton extends LcarsElement {
 
   private authorTabIndex: string | null = null;
 
+  private spaceArmed = false;
+
   constructor() {
     super();
     this.addEventListener('click', this.handleClick.bind(this));
     this.addEventListener('keydown', this.handleKeyDown.bind(this));
     this.addEventListener('keyup', this.handleKeyUp.bind(this));
+    this.addEventListener('blur', () => {
+      this.spaceArmed = false;
+    });
   }
 
   override connectedCallback(): void {
@@ -149,7 +154,9 @@ export class LcarsButton extends LcarsElement {
     if (!this.hasAttribute('role')) {
       this.setAttribute('role', 'button');
     }
-    if (this.hasAttribute('tabindex')) {
+    // Capture only on the first connect; on reconnects the attribute holds
+    // the component-managed value, not the author's.
+    if (!this.hasUpdated && this.hasAttribute('tabindex')) {
       this.authorTabIndex = this.getAttribute('tabindex');
     }
     this.updateTabIndex();
@@ -185,7 +192,7 @@ export class LcarsButton extends LcarsElement {
       return;
     }
 
-    if (this.sound && this.sound !== 'none') {
+    if (this.sound && this.sound !== 'none' && this.sound !== 'silent') {
       playLcarsSound(this.sound);
     }
 
@@ -213,18 +220,21 @@ export class LcarsButton extends LcarsElement {
     } else if (event.key === ' ') {
       // Native buttons activate Space on keyup; suppress scrolling here only.
       event.preventDefault();
+      this.spaceArmed = true;
     }
   }
 
   private handleKeyUp(event: KeyboardEvent): void {
-    if (this.disabled) {
+    if (event.key !== ' ') {
       return;
     }
-
-    if (event.key === ' ') {
-      event.preventDefault();
-      this.click();
+    const armed = this.spaceArmed;
+    this.spaceArmed = false;
+    if (this.disabled || !armed) {
+      return;
     }
+    event.preventDefault();
+    this.click();
   }
 
   override render(): TemplateResult {

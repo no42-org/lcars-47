@@ -136,6 +136,10 @@ describe('LCARS Geometric Framework Components', () => {
       const clickSpy = vi.fn();
       button.addEventListener('lcars-click', clickSpy);
 
+      // Space keyup without a preceding keydown on this button must not activate
+      button.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      expect(clickSpy).not.toHaveBeenCalled();
+
       button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       expect(clickSpy).toHaveBeenCalledTimes(1);
 

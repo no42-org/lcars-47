@@ -35,6 +35,12 @@ export class LcarsAudioSynthesizer {
         this.masterGain.gain.setValueAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
       } catch {
+        // Partial construction must not leak a context with no master gain.
+        try {
+          this.ctx?.close().catch(() => {});
+        } catch {}
+        this.ctx = null;
+        this.masterGain = null;
         return null;
       }
     }
@@ -97,10 +103,13 @@ export class LcarsAudioSynthesizer {
     }
   }
 
-  public play(sound: LcarsSoundType | string = 'chirp', options: LcarsAudioOptions = {}): LcarsSoundHandle {
+  public play(
+    sound: LcarsSoundType | (string & {}) = 'chirp',
+    options: LcarsAudioOptions = {}
+  ): LcarsSoundHandle {
     const noopHandle: LcarsSoundHandle = { stop: () => {} };
 
-    if (this.muted || sound === 'none' || sound === '') {
+    if (this.muted || sound === 'none' || sound === 'silent' || sound === '') {
       return noopHandle;
     }
 
@@ -137,6 +146,16 @@ export class LcarsAudioSynthesizer {
     }
   }
 
+  private clampDuration(value: number | undefined, fallback: number, min: number): number {
+    const v = value !== undefined && Number.isFinite(value) ? value : fallback;
+    return Math.min(10, Math.max(min, v));
+  }
+
+  private clampFrequency(value: number | undefined, fallback: number): number {
+    const v = value !== undefined && Number.isFinite(value) ? value : fallback;
+    return Math.min(20000, Math.max(10, v));
+  }
+
   /**
    * Standard LCARS UI Chirp (Descending sweep 880Hz -> 440Hz in ~55ms)
    */
@@ -146,8 +165,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.005, options.duration ?? 0.055);
-    const startFreq = Math.max(10, options.frequency ?? 880);
+    const duration = this.clampDuration(options.duration, 0.055, 0.005);
+    const startFreq = this.clampFrequency(options.frequency, 880);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -190,8 +209,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.02, options.duration ?? 0.16);
-    const baseFreq = Math.max(10, options.frequency ?? 587.33);
+    const duration = this.clampDuration(options.duration, 0.16, 0.02);
+    const baseFreq = this.clampFrequency(options.frequency, 587.33);
 
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
@@ -237,7 +256,7 @@ export class LcarsAudioSynthesizer {
   }
 
   /**
-   * Warning Staccato Pulse (Dual 330Hz / 440Hz pulse)
+   * Warning Staccato Pulse (Triangle wave stepping 330Hz -> ~439Hz)
    */
   private synthesizeWarning(
     ctx: AudioContext,
@@ -245,8 +264,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.02, options.duration ?? 0.14);
-    const baseFreq = Math.max(10, options.frequency ?? 330);
+    const duration = this.clampDuration(options.duration, 0.14, 0.02);
+    const baseFreq = this.clampFrequency(options.frequency, 330);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -282,7 +301,7 @@ export class LcarsAudioSynthesizer {
   }
 
   /**
-   * Red Alert Siren Sweep (Rising 400Hz -> 800Hz sawtooth/sine)
+   * Red Alert Siren Sweep (Rising 400Hz -> 800Hz sawtooth)
    */
   private synthesizeAlert(
     ctx: AudioContext,
@@ -290,8 +309,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.05, options.duration ?? 0.45);
-    const baseFreq = Math.max(10, options.frequency ?? 400);
+    const duration = this.clampDuration(options.duration, 0.45, 0.05);
+    const baseFreq = this.clampFrequency(options.frequency, 400);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -335,8 +354,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.005, options.duration ?? 0.025);
-    const startFreq = Math.max(10, options.frequency ?? 1400);
+    const duration = this.clampDuration(options.duration, 0.025, 0.005);
+    const startFreq = this.clampFrequency(options.frequency, 1400);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -379,8 +398,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.02, options.duration ?? 0.12);
-    const baseFreq = Math.max(10, options.frequency ?? 200);
+    const duration = this.clampDuration(options.duration, 0.12, 0.02);
+    const baseFreq = this.clampFrequency(options.frequency, 200);
 
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
@@ -410,7 +429,7 @@ export class LcarsAudioSynthesizer {
 
     osc1.start(now);
     osc1.stop(now + duration);
-    osc2.start(now + duration);
+    osc2.start(now);
     osc2.stop(now + duration);
 
     return {
@@ -433,8 +452,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.005, options.duration ?? 0.08);
-    const freq = Math.max(10, options.frequency ?? 800);
+    const duration = this.clampDuration(options.duration, 0.08, 0.005);
+    const freq = this.clampFrequency(options.frequency, 800);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -476,8 +495,8 @@ export class LcarsAudioSynthesizer {
     vol: number,
     options: LcarsAudioOptions
   ): LcarsSoundHandle {
-    const duration = Math.max(0.05, options.duration ?? 0.6);
-    const baseFreq = Math.max(10, options.frequency ?? 70);
+    const duration = this.clampDuration(options.duration, 0.6, 0.05);
+    const baseFreq = this.clampFrequency(options.frequency, 70);
 
     const osc = ctx.createOscillator();
     const filter = ctx.createBiquadFilter();

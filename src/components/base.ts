@@ -73,7 +73,10 @@ export class LcarsElement extends LitElement {
     }
 
     if (colorName.startsWith('--')) {
-      return `var(${colorName})`;
+      // Only a valid custom-property ident may be interpolated into var().
+      return /^--[A-Za-z0-9_-]+$/.test(colorName)
+        ? `var(${colorName})`
+        : `var(${defaultToken})`;
     }
 
     // Raw CSS color passthrough. Values are interpolated into inline styles, so

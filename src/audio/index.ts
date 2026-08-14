@@ -25,7 +25,7 @@ export function getAudioSynthesizer(): LcarsAudioSynthesizer {
  * Play a procedural LCARS interface sound effect.
  */
 export function playLcarsSound(
-  sound: LcarsSoundType | string = 'chirp',
+  sound: LcarsSoundType | (string & {}) = 'chirp',
   options?: LcarsAudioOptions
 ): LcarsSoundHandle {
   return getAudioSynthesizer().play(sound, options);
@@ -75,6 +75,7 @@ export async function resumeAudio(): Promise<void> {
 
 /**
  * Close and release underlying Web Audio hardware resources.
+ * Discards the singleton: volume and mute state revert to defaults on next use.
  */
 export async function closeAudio(): Promise<void> {
   if (globalSynthesizer) {
@@ -82,3 +83,17 @@ export async function closeAudio(): Promise<void> {
     globalSynthesizer = null;
   }
 }
+
+/**
+ * Global LCARS audio control surface (see CAP-3: `LcarsAudio.mute()`).
+ */
+export const LcarsAudio = {
+  play: playLcarsSound,
+  setVolume: setAudioVolume,
+  getVolume: getAudioVolume,
+  mute: muteAudio,
+  unmute: unmuteAudio,
+  isMuted: isAudioMuted,
+  resume: resumeAudio,
+  close: closeAudio,
+} as const;

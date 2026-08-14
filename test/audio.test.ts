@@ -134,6 +134,94 @@ describe('LCARS Procedural Audio Subsystem', () => {
     expect(() => noneHandle.stop()).not.toThrow();
   });
 
+  it('constructs zero audio nodes when muted and for silent/none sentinels', () => {
+    synth.play('chirp');
+    // @ts-expect-error access private for testing
+    const ctx = synth.getAudioContext() as unknown as MockAudioContext;
+    ctx.createOscillator.mockClear();
+
+    synth.mute();
+    synth.play('chirp');
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+
+    synth.unmute();
+    synth.play('silent');
+    synth.play('none');
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+
+    // Unknown names fall back to the default chirp
+    synth.play('blorp');
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(1);
+  });
+
+  it('schedules distinct, correctly-timed graphs per preset', () => {
+    // @ts-expect-error access private for testing
+    const ctx = synth.getAudioContext() as unknown as MockAudioContext;
+
+    ctx.createOscillator.mockClear();
+    synth.play('deny');
+    const denyOscs = ctx.createOscillator.mock.results.map(
+      (r) => r.value as MockOscillatorNode
+    );
+    expect(denyOscs).toHaveLength(2);
+    for (const osc of denyOscs) {
+      expect(osc.start).toHaveBeenCalledWith(0);
+    }
+
+    ctx.createBiquadFilter.mockClear();
+    synth.play('warp');
+    expect(ctx.createBiquadFilter).toHaveBeenCalledTimes(1);
+
+    ctx.createOscillator.mockClear();
+    synth.play('beep');
+    const beepOsc = ctx.createOscillator.mock.results[0].value as MockOscillatorNode;
+    expect(beepOsc.frequency.setValueAtTime).toHaveBeenCalledWith(800, 0);
+  });
+
+  it('ramps the master gain on volume and mute changes', () => {
+    synth.play('chirp');
+    // @ts-expect-error access private for testing
+    const ctx = synth.getAudioContext() as unknown as MockAudioContext;
+    const masterGain = ctx.createGain.mock.results[0].value as MockGainNode;
+
+    masterGain.gain.setTargetAtTime.mockClear();
+    synth.setVolume(0.3);
+    expect(masterGain.gain.setTargetAtTime).toHaveBeenCalledWith(0.3, 0, 0.01);
+
+    synth.mute();
+    expect(masterGain.gain.setTargetAtTime).toHaveBeenCalledWith(0, 0, 0.01);
+
+    synth.unmute();
+    expect(masterGain.gain.setTargetAtTime).toHaveBeenCalledWith(0.3, 0, 0.01);
+  });
+
+  it('sanitizes NaN and Infinity duration/frequency options', () => {
+    // @ts-expect-error access private for testing
+    const ctx = synth.getAudioContext() as unknown as MockAudioContext;
+    ctx.createOscillator.mockClear();
+
+    const handle = synth.play('chirp', {
+      duration: Number.NaN,
+      frequency: Number.POSITIVE_INFINITY,
+    });
+    expect(handle).toBeDefined();
+
+    const osc = ctx.createOscillator.mock.results[0].value as MockOscillatorNode;
+    expect(osc.stop).toHaveBeenCalledWith(0.055);
+    expect(osc.frequency.setValueAtTime).toHaveBeenCalledWith(880, 0);
+  });
+
+  it('exposes the LcarsAudio control surface per CAP-3', () => {
+    audioModule.LcarsAudio.setVolume(0.4);
+    expect(audioModule.LcarsAudio.getVolume()).toBe(0.4);
+
+    audioModule.LcarsAudio.mute();
+    expect(audioModule.LcarsAudio.isMuted()).toBe(true);
+
+    audioModule.LcarsAudio.unmute();
+    expect(audioModule.LcarsAudio.isMuted()).toBe(false);
+  });
+
   it('resumes suspended AudioContext via resumeAudio', async () => {
     const globalSynth = getAudioSynthesizer();
     // @ts-expect-error access private for testing
@@ -199,6 +287,14 @@ describe('LCARS Procedural Audio Subsystem', () => {
     playSpy.mockClear();
     button.disabled = false;
     button.sound = 'none';
+    await button.updateComplete;
+
+    button.click();
+    expect(playSpy).not.toHaveBeenCalled();
+
+    // Button with sound="silent" must be honored (CAP-3 / AD-3)
+    playSpy.mockClear();
+    button.sound = 'silent';
     await button.updateComplete;
 
     button.click();

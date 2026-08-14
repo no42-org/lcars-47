@@ -12,6 +12,7 @@ export type LcarsSoundType =
   | 'deny'
   | 'beep'
   | 'warp'
+  | 'silent'
   | 'none';
 
 export interface LcarsAudioOptions {

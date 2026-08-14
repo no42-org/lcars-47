@@ -14,6 +14,7 @@ export class LcarsFrame extends LcarsElement {
     :host {
       display: block;
       width: 100%;
+      min-height: 100vh;
       min-height: var(--lcars-frame-min-height, 100dvh);
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);
@@ -32,6 +33,7 @@ export class LcarsFrame extends LcarsElement {
         'elbow-br footer';
       gap: var(--lcars-gap-sm, 4px);
       width: 100%;
+      min-height: calc(100vh - 2 * var(--lcars-gap-md, 8px));
       min-height: calc(var(--lcars-frame-min-height, 100dvh) - 2 * var(--lcars-gap-md, 8px));
       box-sizing: border-box;
     }
