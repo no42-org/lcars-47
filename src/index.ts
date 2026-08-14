@@ -14,6 +14,9 @@ import {
   type LcarsClickEventDetail,
 } from './components/lcars-button';
 import { LcarsPanel } from './components/lcars-panel';
+import { LcarsReadout, type LcarsReadoutAlign } from './components/lcars-readout';
+import { LcarsBargraph, type LcarsBargraphOrientation } from './components/lcars-bargraph';
+import { LcarsStatusPill, type LcarsSystemStatus } from './components/lcars-status-pill';
 
 // Export Themes & Utilities
 export {
@@ -34,7 +37,6 @@ export {
   type LcarsAudioOptions,
   type LcarsSoundHandle,
   LcarsAudioSynthesizer,
-  LcarsAudio,
   getAudioSynthesizer,
   playLcarsSound,
   setAudioVolume,
@@ -56,6 +58,12 @@ export {
   type LcarsButtonShape,
   type LcarsClickEventDetail,
   LcarsPanel,
+  LcarsReadout,
+  type LcarsReadoutAlign,
+  LcarsBargraph,
+  type LcarsBargraphOrientation,
+  LcarsStatusPill,
+  type LcarsSystemStatus,
 };
 
 // Register custom elements, guarded so a second evaluation of the module
@@ -70,3 +78,6 @@ define('lcars-frame', LcarsFrame);
 define('lcars-elbow', LcarsElbow);
 define('lcars-button', LcarsButton);
 define('lcars-panel', LcarsPanel);
+define('lcars-readout', LcarsReadout);
+define('lcars-bargraph', LcarsBargraph);
+define('lcars-status-pill', LcarsStatusPill);
