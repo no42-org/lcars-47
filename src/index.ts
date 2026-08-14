@@ -28,7 +28,7 @@ export function resolveLcarsTheme(themeName: string): LcarsEraTheme {
   if (LCARS_THEMES.includes(themeName as LcarsEraTheme)) {
     return themeName as LcarsEraTheme;
   }
-  if (themeName in LCARS_THEME_ALIASES) {
+  if (Object.hasOwn(LCARS_THEME_ALIASES, themeName)) {
     return LCARS_THEME_ALIASES[themeName as LcarsThemeAlias];
   }
   return 'tng';

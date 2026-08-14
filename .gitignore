@@ -16,3 +16,6 @@ openspec/
 .agent/
 .agents/
 .claude/
+
+# IDE
+.idea/

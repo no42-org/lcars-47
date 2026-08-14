@@ -38,16 +38,6 @@
     --lcars-contrast-black: #000000;
     --lcars-contrast-red: #ff3333;
 
-    /* Default Functional Tokens (defaults to TNG) */
-    --lcars-color-primary: var(--lcars-tng-butterscotch);
-    --lcars-color-secondary: var(--lcars-tng-lilac);
-    --lcars-color-accent: var(--lcars-tng-tan);
-    --lcars-color-info: var(--lcars-tng-violet);
-    --lcars-color-warning: var(--lcars-tng-gold);
-    --lcars-color-alert: var(--lcars-tng-red);
-    --lcars-color-bg: var(--lcars-tng-black);
-    --lcars-color-surface: #101014;
-    --lcars-color-text: var(--lcars-tng-butterscotch);
-    --lcars-color-text-muted: var(--lcars-tng-tan);
+    /* Functional tokens (--lcars-color-*) are mapped per era in themes.css. */
   }
 }

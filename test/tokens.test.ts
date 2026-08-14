@@ -5,7 +5,10 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import {
   VERSION,
   LCARS_THEMES,
@@ -41,6 +44,12 @@ describe('LCARS Design Tokens & Theme Manager', () => {
     expect(resolveLcarsTheme('refit')).toBe('nemesis');
     expect(resolveLcarsTheme('accessible')).toBe('contrast');
     expect(resolveLcarsTheme('unknown-theme')).toBe('tng');
+  });
+
+  it('ignores inherited object properties as theme names', () => {
+    expect(resolveLcarsTheme('toString')).toBe('tng');
+    expect(resolveLcarsTheme('constructor')).toBe('tng');
+    expect(resolveLcarsTheme('hasOwnProperty')).toBe('tng');
   });
 
   it('sets and gets valid LCARS themes and aliases', () => {
@@ -90,15 +99,17 @@ describe('CSS Design Token Source Verification', () => {
     expect(rootCss).toContain("@import './themes.css';");
   });
 
-  it('defines required functional color tokens in colors.css', () => {
-    expect(colorsCss).toContain('--lcars-color-primary');
-    expect(colorsCss).toContain('--lcars-color-secondary');
-    expect(colorsCss).toContain('--lcars-color-accent');
-    expect(colorsCss).toContain('--lcars-color-warning');
-    expect(colorsCss).toContain('--lcars-color-alert');
-    expect(colorsCss).toContain('--lcars-color-bg');
-    expect(colorsCss).toContain('--lcars-color-surface');
-    expect(colorsCss).toContain('--lcars-color-text');
+  it('defines required functional color tokens in themes.css only', () => {
+    expect(themesCss).toContain('--lcars-color-primary');
+    expect(themesCss).toContain('--lcars-color-secondary');
+    expect(themesCss).toContain('--lcars-color-accent');
+    expect(themesCss).toContain('--lcars-color-warning');
+    expect(themesCss).toContain('--lcars-color-alert');
+    expect(themesCss).toContain('--lcars-color-bg');
+    expect(themesCss).toContain('--lcars-color-surface');
+    expect(themesCss).toContain('--lcars-color-text');
+    // Functional tokens must not be duplicated in colors.css (single source of truth).
+    expect(colorsCss).not.toContain('--lcars-color-primary:');
   });
 
   it('defines all era color palettes', () => {
@@ -116,8 +127,10 @@ describe('CSS Design Token Source Verification', () => {
     expect(colorsCss).toContain('--lcars-contrast-cyan: #33d6ff;');
   });
 
-  it('defines typography tokens and local Antonio font-face', () => {
+  it('defines typography tokens and bundled Antonio font-face', () => {
     expect(typographyCss).toContain("font-family: 'Antonio';");
+    expect(typographyCss).toContain("url('./fonts/antonio-latin-var.woff2') format('woff2')");
+    expect(typographyCss).toContain("url('./fonts/antonio-latin-ext-var.woff2') format('woff2')");
     expect(typographyCss).toContain('--lcars-font-family:');
     expect(typographyCss).toContain('--lcars-font-size-xs:');
     expect(typographyCss).toContain('--lcars-font-size-3xl:');
