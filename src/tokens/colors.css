@@ -1,0 +1,53 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens {
+  :root {
+    /* Palette: TNG Era (2360s) */
+    --lcars-tng-butterscotch: #ff9900;
+    --lcars-tng-gold: #ffaa00;
+    --lcars-tng-tan: #ffcc99;
+    --lcars-tng-lilac: #cc99cc;
+    --lcars-tng-violet: #9999cc;
+    --lcars-tng-red: #cc3333;
+    --lcars-tng-black: #000000;
+
+    /* Palette: DS9 / Voyager Era (2370s) */
+    --lcars-ds9-ice-blue: #99ccff;
+    --lcars-ds9-dark-blue: #3366cc;
+    --lcars-ds9-magenta: #cc6699;
+    --lcars-ds9-light-purple: #bb99ee;
+    --lcars-ds9-amber: #ffaa00;
+    --lcars-ds9-alert-red: #dd2222;
+
+    /* Palette: Nemesis / 24th Century Refit */
+    --lcars-nemesis-teal: #00ccff;
+    --lcars-nemesis-deep-teal: #0088aa;
+    --lcars-nemesis-gold: #ffcc00;
+    --lcars-nemesis-slate: #050810;
+    --lcars-nemesis-light-cyan: #b3f0ff;
+    --lcars-nemesis-alert-red: #ff4444;
+
+    /* Palette: WCAG High-Contrast Mode */
+    --lcars-contrast-amber: #ffaa00;
+    --lcars-contrast-cyan: #33d6ff;
+    --lcars-contrast-green: #33ff66;
+    --lcars-contrast-white: #ffffff;
+    --lcars-contrast-black: #000000;
+    --lcars-contrast-red: #ff3333;
+
+    /* Default Functional Tokens (defaults to TNG) */
+    --lcars-color-primary: var(--lcars-tng-butterscotch);
+    --lcars-color-secondary: var(--lcars-tng-lilac);
+    --lcars-color-accent: var(--lcars-tng-tan);
+    --lcars-color-info: var(--lcars-tng-violet);
+    --lcars-color-warning: var(--lcars-tng-gold);
+    --lcars-color-alert: var(--lcars-tng-red);
+    --lcars-color-bg: var(--lcars-tng-black);
+    --lcars-color-surface: #101014;
+    --lcars-color-text: var(--lcars-tng-butterscotch);
+    --lcars-color-text-muted: var(--lcars-tng-tan);
+  }
+}

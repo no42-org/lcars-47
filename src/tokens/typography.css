@@ -1,0 +1,47 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens {
+  @font-face {
+    font-family: 'Antonio';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Antonio'), local('Antonio-Regular'), local('Arial Narrow');
+  }
+
+  @font-face {
+    font-family: 'Antonio';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Antonio Bold'), local('Antonio-Bold'), local('Arial Narrow Bold');
+  }
+
+  :root {
+    /* Font Families */
+    --lcars-font-family: 'Antonio', 'Arial Narrow', -apple-system, BlinkMacSystemFont, sans-serif;
+    --lcars-font-mono: ui-monospace, 'SF Mono', 'Courier New', monospace;
+
+    /* Font Sizes */
+    --lcars-font-size-xs: 0.75rem;     /* 12px */
+    --lcars-font-size-sm: 0.875rem;    /* 14px */
+    --lcars-font-size-md: 1rem;        /* 16px */
+    --lcars-font-size-lg: 1.25rem;     /* 20px */
+    --lcars-font-size-xl: 1.5rem;      /* 24px */
+    --lcars-font-size-2xl: 2rem;       /* 32px */
+    --lcars-font-size-3xl: 2.5rem;     /* 40px */
+
+    /* Typographic Details */
+    --lcars-line-height-tight: 1.1;
+    --lcars-line-height-normal: 1.3;
+    --lcars-letter-spacing-normal: 0.05em;
+    --lcars-letter-spacing-wide: 0.08em;
+    --lcars-letter-spacing-widest: 0.12em;
+    --lcars-text-transform: uppercase;
+    --lcars-font-weight-normal: 400;
+    --lcars-font-weight-bold: 700;
+  }
+}

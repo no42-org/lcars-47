@@ -1,0 +1,47 @@
+{
+  "name": "@riptide-labs/lcars",
+  "version": "0.1.0",
+  "description": "Modern, accessible LCARS Web Component library and design token system",
+  "type": "module",
+  "main": "./dist/lcars.iife.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/lcars.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/lcars.iife.js"
+    },
+    "./css": "./dist/lcars.css",
+    "./tokens": "./dist/lcars.css"
+  },
+  "sideEffects": [
+    "*.css",
+    "./src/tokens/*.css"
+  ],
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "happy-dom": "^20.11.2",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7",
+    "vite-plugin-dts": "^4.5.0",
+    "vitest": "^2.1.8"
+  },
+  "license": "LGPL-3.0-or-later",
+  "author": "Ronny Trommer <ronny@no42.org>"
+}

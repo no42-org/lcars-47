@@ -1,0 +1,66 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens {
+  /* TNG Era Theme (Default) */
+  :root,
+  [data-lcars-theme="tng"] {
+    --lcars-color-primary: var(--lcars-tng-butterscotch);
+    --lcars-color-secondary: var(--lcars-tng-lilac);
+    --lcars-color-accent: var(--lcars-tng-tan);
+    --lcars-color-info: var(--lcars-tng-violet);
+    --lcars-color-warning: var(--lcars-tng-gold);
+    --lcars-color-alert: var(--lcars-tng-red);
+    --lcars-color-bg: var(--lcars-tng-black);
+    --lcars-color-surface: #120e06;
+    --lcars-color-text: var(--lcars-tng-butterscotch);
+    --lcars-color-text-muted: var(--lcars-tng-tan);
+  }
+
+  /* DS9 / Voyager Era Theme */
+  [data-lcars-theme="ds9"],
+  [data-lcars-theme="voyager"] {
+    --lcars-color-primary: var(--lcars-ds9-ice-blue);
+    --lcars-color-secondary: var(--lcars-ds9-magenta);
+    --lcars-color-accent: var(--lcars-ds9-dark-blue);
+    --lcars-color-info: var(--lcars-ds9-light-purple);
+    --lcars-color-warning: var(--lcars-ds9-amber);
+    --lcars-color-alert: var(--lcars-ds9-alert-red);
+    --lcars-color-bg: #000208;
+    --lcars-color-surface: #0a1020;
+    --lcars-color-text: var(--lcars-ds9-ice-blue);
+    --lcars-color-text-muted: #88aadd;
+  }
+
+  /* Nemesis / 24th Century Refit Theme */
+  [data-lcars-theme="nemesis"],
+  [data-lcars-theme="refit"] {
+    --lcars-color-primary: var(--lcars-nemesis-teal);
+    --lcars-color-secondary: var(--lcars-nemesis-deep-teal);
+    --lcars-color-accent: var(--lcars-nemesis-gold);
+    --lcars-color-info: var(--lcars-nemesis-light-cyan);
+    --lcars-color-warning: var(--lcars-nemesis-gold);
+    --lcars-color-alert: var(--lcars-nemesis-alert-red);
+    --lcars-color-bg: var(--lcars-nemesis-slate);
+    --lcars-color-surface: #0c1420;
+    --lcars-color-text: var(--lcars-nemesis-teal);
+    --lcars-color-text-muted: var(--lcars-nemesis-deep-teal);
+  }
+
+  /* WCAG High-Contrast Mode */
+  [data-lcars-theme="contrast"],
+  [data-lcars-theme="accessible"] {
+    --lcars-color-primary: var(--lcars-contrast-amber);
+    --lcars-color-secondary: var(--lcars-contrast-cyan);
+    --lcars-color-accent: var(--lcars-contrast-green);
+    --lcars-color-info: var(--lcars-contrast-cyan);
+    --lcars-color-warning: var(--lcars-contrast-amber);
+    --lcars-color-alert: var(--lcars-contrast-red);
+    --lcars-color-bg: var(--lcars-contrast-black);
+    --lcars-color-surface: #181818;
+    --lcars-color-text: var(--lcars-contrast-white);
+    --lcars-color-text-muted: var(--lcars-contrast-amber);
+  }
+}

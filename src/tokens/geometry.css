@@ -1,0 +1,38 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens {
+  :root {
+    /* Corner Radii */
+    --lcars-radius-elbow: 28px;
+    --lcars-radius-pill: 14px;
+    --lcars-radius-sm: 6px;
+    --lcars-radius-none: 0px;
+
+    /* Structural Dimensions */
+    --lcars-bar-height: 28px;
+    --lcars-bar-height-sm: 18px;
+    --lcars-bar-height-lg: 38px;
+    --lcars-sidebar-width: 160px;
+    --lcars-elbow-width: 160px;
+    --lcars-elbow-height: 60px;
+
+    /* Touch Targets */
+    --lcars-touch-target-min-width: 80px;
+    --lcars-touch-target-min-height: 40px;
+
+    /* Spacing & Grid Gaps */
+    --lcars-gap-xs: 2px;
+    --lcars-gap-sm: 4px;
+    --lcars-gap-md: 8px;
+    --lcars-gap-lg: 16px;
+    --lcars-gap-xl: 24px;
+
+    /* Borders */
+    --lcars-border-width: 3px;
+    --lcars-border-width-sm: 1.5px;
+    --lcars-border-width-lg: 5px;
+  }
+}

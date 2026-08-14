@@ -1,0 +1,90 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens, reset, components, utilities;
+
+@import './colors.css';
+@import './typography.css';
+@import './geometry.css';
+@import './themes.css';
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--lcars-color-bg);
+    color: var(--lcars-color-text);
+    font-family: var(--lcars-font-family);
+    font-size: var(--lcars-font-size-md);
+    line-height: var(--lcars-line-height-normal);
+    letter-spacing: var(--lcars-letter-spacing-wide);
+    text-transform: var(--lcars-text-transform);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* Text Color Utilities */
+  .lcars-text-primary { color: var(--lcars-color-primary) !important; }
+  .lcars-text-secondary { color: var(--lcars-color-secondary) !important; }
+  .lcars-text-accent { color: var(--lcars-color-accent) !important; }
+  .lcars-text-info { color: var(--lcars-color-info) !important; }
+  .lcars-text-warning { color: var(--lcars-color-warning) !important; }
+  .lcars-text-alert { color: var(--lcars-color-alert) !important; }
+  .lcars-text-muted { color: var(--lcars-color-text-muted) !important; }
+
+  /* Background Color Utilities */
+  .lcars-bg-primary { background-color: var(--lcars-color-primary) !important; }
+  .lcars-bg-secondary { background-color: var(--lcars-color-secondary) !important; }
+  .lcars-bg-accent { background-color: var(--lcars-color-accent) !important; }
+  .lcars-bg-info { background-color: var(--lcars-color-info) !important; }
+  .lcars-bg-warning { background-color: var(--lcars-color-warning) !important; }
+  .lcars-bg-alert { background-color: var(--lcars-color-alert) !important; }
+  .lcars-bg-surface { background-color: var(--lcars-color-surface) !important; }
+  .lcars-bg-black { background-color: #000000 !important; }
+
+  /* Typography Utilities */
+  .lcars-font-mono { font-family: var(--lcars-font-mono) !important; }
+  .lcars-text-xs { font-size: var(--lcars-font-size-xs) !important; }
+  .lcars-text-sm { font-size: var(--lcars-font-size-sm) !important; }
+  .lcars-text-md { font-size: var(--lcars-font-size-md) !important; }
+  .lcars-text-lg { font-size: var(--lcars-font-size-lg) !important; }
+  .lcars-text-xl { font-size: var(--lcars-font-size-xl) !important; }
+  .lcars-text-2xl { font-size: var(--lcars-font-size-2xl) !important; }
+  .lcars-text-3xl { font-size: var(--lcars-font-size-3xl) !important; }
+
+  /* Layout Primitives */
+  .lcars-bar {
+    height: var(--lcars-bar-height);
+    background-color: var(--lcars-color-primary);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--lcars-gap-md);
+    color: #000000;
+    font-weight: bold;
+    user-select: none;
+  }
+
+  .lcars-pill-start {
+    border-top-left-radius: var(--lcars-radius-pill);
+    border-bottom-left-radius: var(--lcars-radius-pill);
+  }
+
+  .lcars-pill-end {
+    border-top-right-radius: var(--lcars-radius-pill);
+    border-bottom-right-radius: var(--lcars-radius-pill);
+  }
+
+  .lcars-pill {
+    border-radius: var(--lcars-radius-pill);
+  }
+}

@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Production build artifacts
+dist/
+
+# OS and system files
+.DS_Store
+Thumbs.db
+*.log
+
+# AI tools
+_bmad-output/
+_bmad/
+openspec/
+.agent/
+.agents/
+.claude/
