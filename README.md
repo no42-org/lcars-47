@@ -3,7 +3,7 @@ Copyright 2026 Ronny Trommer <ronny@no42.org>
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
-# @riptide-labs/lcars
+# @no42-org/lcars-47
 
 Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user interface component library built with Lit Web Components, pure CSS design tokens, and a zero-asset Web Audio API procedural synthesizer.
 
@@ -26,15 +26,15 @@ Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user inte
 Install via npm:
 
 ```bash
-npm install @riptide-labs/lcars
+npm install @no42-org/lcars-47
 ```
 
 Import the library and styles in your application:
 
 ```typescript
-import '@riptide-labs/lcars';
-import '@riptide-labs/lcars/css';
-import { setLcarsTheme, playLcarsSound } from '@riptide-labs/lcars';
+import '@no42-org/lcars-47';
+import '@no42-org/lcars-47/css';
+import { setLcarsTheme, playLcarsSound } from '@no42-org/lcars-47';
 ```
 
 ### Standalone CDN (IIFE)
@@ -42,8 +42,8 @@ import { setLcarsTheme, playLcarsSound } from '@riptide-labs/lcars';
 Include the standalone CSS and JavaScript bundles directly via `<script>` tag:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@riptide-labs/lcars@0.1.0/dist/lcars.css" />
-<script src="https://unpkg.com/@riptide-labs/lcars@0.1.0/dist/lcars.iife.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.css" />
+<script src="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.iife.js"></script>
 ```
 
 All custom elements are automatically registered, and utility functions are available under `window.Lcars`.
@@ -58,10 +58,10 @@ All custom elements are automatically registered, and utility functions are avai
   <head>
     <meta charset="UTF-8" />
     <title>LCARS Console</title>
-    <link rel="stylesheet" href="https://unpkg.com/@riptide-labs/lcars@0.1.0/dist/lcars.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.css" />
     <!-- The IIFE bundle is self-contained. The ESM entry externalizes lit, so
          it needs a bundler (or an import map) rather than a plain script tag. -->
-    <script src="https://unpkg.com/@riptide-labs/lcars@0.1.0/dist/lcars.iife.js"></script>
+    <script src="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.iife.js"></script>
   </head>
   <body>
     <lcars-frame theme="tng">
@@ -96,7 +96,7 @@ All custom elements are automatically registered, and utility functions are avai
 Set the active theme globally using `setLcarsTheme()` or the `data-lcars-theme` attribute on the root `<html>` element:
 
 ```typescript
-import { setLcarsTheme } from '@riptide-labs/lcars';
+import { setLcarsTheme } from '@no42-org/lcars-47';
 
 // Switch active theme
 setLcarsTheme('ds9'); // 'tng' | 'ds9' | 'nemesis' | 'contrast'
@@ -152,7 +152,7 @@ Diagnostic system state indicator with optional CSS pulse animations.
 Trigger authentic Starfleet UI acoustic feedback programmatically with zero audio files:
 
 ```typescript
-import { playLcarsSound, setAudioVolume, muteAudio, unmuteAudio } from '@riptide-labs/lcars';
+import { playLcarsSound, setAudioVolume, muteAudio, unmuteAudio } from '@no42-org/lcars-47';
 
 // Play sound presets
 playLcarsSound('chirp');
