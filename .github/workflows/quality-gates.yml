@@ -50,3 +50,14 @@ jobs:
           args: -color
 
       - uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          # SARIF upload needs GitHub Advanced Security, which a private repo on
+          # this plan does not have; leaving it on fails the job with
+          # "Resource not accessible by integration" regardless of findings.
+          # Re-enable if this repo goes public or gains GHAS.
+          advanced-security: false
+          # Without the SARIF upload, annotations are how findings surface.
+          annotations: true
+          # Pin the tool as well as the action: `latest` would silently change
+          # what this gate enforces.
+          version: 1.29.0
