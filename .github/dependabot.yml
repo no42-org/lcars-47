@@ -8,6 +8,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Supply-chain cooldown: do not propose a version the moment it is
+    # published. A compromised release is typically yanked within days, and
+    # this window means the repo never auto-adopts one.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
@@ -20,6 +28,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Supply-chain cooldown: do not propose a version the moment it is
+    # published. A compromised release is typically yanked within days, and
+    # this window means the repo never auto-adopts one.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
