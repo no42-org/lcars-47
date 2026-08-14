@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { LitElement } from 'lit';
+import { LitElement, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { setLcarsTheme, type LcarsEraTheme } from '../theme';
+import { setLcarsTheme, type LcarsThemeName } from '../theme';
 
 /**
  * Base element for all LCARS web components.
@@ -13,16 +13,12 @@ import { setLcarsTheme, type LcarsEraTheme } from '../theme';
  */
 export class LcarsElement extends LitElement {
   @property({ type: String, reflect: true })
-  theme?: LcarsEraTheme;
+  theme?: LcarsThemeName;
 
-  override updated(changedProperties: Map<string, unknown>): void {
+  override updated(changedProperties: PropertyValues<this>): void {
     super.updated(changedProperties);
     if (changedProperties.has('theme')) {
-      if (this.theme) {
-        setLcarsTheme(this.theme, this);
-      } else {
-        this.removeAttribute('data-lcars-theme');
-      }
+      setLcarsTheme(this.theme, this);
     }
   }
 
@@ -78,6 +74,12 @@ export class LcarsElement extends LitElement {
 
     if (colorName.startsWith('--')) {
       return `var(${colorName})`;
+    }
+
+    // Raw CSS color passthrough. Values are interpolated into inline styles, so
+    // reject anything that could terminate the declaration or open a new block.
+    if (/[;{}]/.test(colorName)) {
+      return `var(${defaultToken})`;
     }
 
     return colorName;

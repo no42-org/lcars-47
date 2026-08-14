@@ -4,19 +4,17 @@
  */
 
 import { html, css, type TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 
 /**
  * `<lcars-frame>` organizes named slots in a standard 2D LCARS layout grid.
  */
-@customElement('lcars-frame')
 export class LcarsFrame extends LcarsElement {
   static override styles = css`
     :host {
       display: block;
       width: 100%;
-      min-height: 100vh;
+      min-height: var(--lcars-frame-min-height, 100dvh);
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
@@ -31,10 +29,10 @@ export class LcarsFrame extends LcarsElement {
       grid-template-areas:
         'elbow-tl top-bar'
         'sidebar  main'
-        'footer   elbow-br';
+        'elbow-br footer';
       gap: var(--lcars-gap-sm, 4px);
       width: 100%;
-      min-height: calc(100vh - 16px);
+      min-height: calc(var(--lcars-frame-min-height, 100dvh) - 2 * var(--lcars-gap-md, 8px));
       box-sizing: border-box;
     }
 
@@ -63,7 +61,7 @@ export class LcarsFrame extends LcarsElement {
       flex-direction: column;
       gap: var(--lcars-gap-md, 8px);
       padding: var(--lcars-gap-md, 8px);
-      background-color: rgba(0, 0, 0, 0.4);
+      background-color: var(--lcars-color-overlay, rgba(0, 0, 0, 0.4));
       border-radius: var(--lcars-radius-sm, 6px);
       overflow: auto;
     }
@@ -78,19 +76,20 @@ export class LcarsFrame extends LcarsElement {
     .slot-elbow-br {
       grid-area: elbow-br;
       display: flex;
-      justify-content: flex-end;
+      justify-content: flex-start;
     }
 
     /* Responsive adjustments for narrow screens */
-    @media (max-width: 640px) {
+    @media (max-width: 600px) {
       .frame-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr auto auto;
+        grid-template-rows: auto auto 1fr auto auto auto;
         grid-template-areas:
           'elbow-tl'
           'top-bar'
           'main'
           'sidebar'
+          'elbow-br'
           'footer';
       }
 

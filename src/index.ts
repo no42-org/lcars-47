@@ -5,6 +5,16 @@
 
 import './tokens/index.css';
 
+import { LcarsElement } from './components/base';
+import { LcarsFrame } from './components/lcars-frame';
+import { LcarsElbow, type LcarsElbowDirection } from './components/lcars-elbow';
+import {
+  LcarsButton,
+  type LcarsButtonShape,
+  type LcarsClickEventDetail,
+} from './components/lcars-button';
+import { LcarsPanel } from './components/lcars-panel';
+
 // Export Themes & Utilities
 export {
   VERSION,
@@ -18,13 +28,44 @@ export {
   getLcarsTheme,
 } from './theme';
 
-// Export Components & Event Types
-export { LcarsElement } from './components/base';
-export { LcarsFrame } from './components/lcars-frame';
-export { LcarsElbow, type LcarsElbowDirection } from './components/lcars-elbow';
+// Export Procedural Audio Subsystem
 export {
+  type LcarsSoundType,
+  type LcarsAudioOptions,
+  type LcarsSoundHandle,
+  LcarsAudioSynthesizer,
+  getAudioSynthesizer,
+  playLcarsSound,
+  setAudioVolume,
+  getAudioVolume,
+  muteAudio,
+  unmuteAudio,
+  isAudioMuted,
+  resumeAudio,
+  closeAudio,
+} from './audio/index';
+
+// Export Components & Event Types
+export {
+  LcarsElement,
+  LcarsFrame,
+  LcarsElbow,
+  type LcarsElbowDirection,
   LcarsButton,
   type LcarsButtonShape,
   type LcarsClickEventDetail,
-} from './components/lcars-button';
-export { LcarsPanel } from './components/lcars-panel';
+  LcarsPanel,
+};
+
+// Register custom elements, guarded so a second evaluation of the module
+// (dual bundle, HMR, CDN + bundler) does not throw NotSupportedError.
+const define = (name: string, ctor: CustomElementConstructor): void => {
+  if (typeof customElements !== 'undefined' && !customElements.get(name)) {
+    customElements.define(name, ctor);
+  }
+};
+
+define('lcars-frame', LcarsFrame);
+define('lcars-elbow', LcarsElbow);
+define('lcars-button', LcarsButton);
+define('lcars-panel', LcarsPanel);

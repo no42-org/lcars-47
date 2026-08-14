@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { html, css, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { html, css, type TemplateResult, type PropertyValues } from 'lit';
+import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
+import { playLcarsSound } from '../audio/index';
 
 export type LcarsButtonShape = 'pill' | 'pill-start' | 'pill-end' | 'rect' | 'bracket';
+
+const BUTTON_SHAPES: readonly LcarsButtonShape[] = ['pill', 'pill-start', 'pill-end', 'rect', 'bracket'];
 
 export interface LcarsClickEventDetail {
   color: string;
@@ -18,7 +21,6 @@ export interface LcarsClickEventDetail {
 /**
  * `<lcars-button>` renders an authentic tactile LCARS button with shape variants.
  */
-@customElement('lcars-button')
 export class LcarsButton extends LcarsElement {
   static override styles = css`
     :host {
@@ -44,7 +46,7 @@ export class LcarsButton extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
       text-transform: uppercase;
-      color: #000000;
+      color: var(--lcars-color-on-accent, #000000);
       cursor: pointer;
       user-select: none;
       box-sizing: border-box;
@@ -77,7 +79,6 @@ export class LcarsButton extends LcarsElement {
     .shape-bracket {
       border-radius: var(--lcars-radius-sm, 6px);
       border: var(--lcars-border-width, 3px) solid currentColor;
-      background-color: transparent !important;
     }
 
     /* Tactile Interaction States */
@@ -134,10 +135,13 @@ export class LcarsButton extends LcarsElement {
   @property({ type: String })
   sound = 'chirp';
 
+  private authorTabIndex: string | null = null;
+
   constructor() {
     super();
     this.addEventListener('click', this.handleClick.bind(this));
     this.addEventListener('keydown', this.handleKeyDown.bind(this));
+    this.addEventListener('keyup', this.handleKeyUp.bind(this));
   }
 
   override connectedCallback(): void {
@@ -145,19 +149,33 @@ export class LcarsButton extends LcarsElement {
     if (!this.hasAttribute('role')) {
       this.setAttribute('role', 'button');
     }
+    if (this.hasAttribute('tabindex')) {
+      this.authorTabIndex = this.getAttribute('tabindex');
+    }
     this.updateTabIndex();
   }
 
-  override updated(changedProperties: Map<string, unknown>): void {
+  override updated(changedProperties: PropertyValues<this>): void {
     super.updated(changedProperties);
     if (changedProperties.has('disabled')) {
       this.setAttribute('aria-disabled', String(this.disabled));
       this.updateTabIndex();
     }
+    if (changedProperties.has('active') && (this.active || this.hasAttribute('aria-pressed'))) {
+      this.setAttribute('aria-pressed', String(this.active));
+    }
+  }
+
+  private get safeShape(): LcarsButtonShape {
+    return BUTTON_SHAPES.includes(this.shape) ? this.shape : 'pill';
   }
 
   private updateTabIndex(): void {
-    this.tabIndex = this.disabled ? -1 : 0;
+    if (this.disabled) {
+      this.tabIndex = -1;
+    } else {
+      this.setAttribute('tabindex', this.authorTabIndex ?? '0');
+    }
   }
 
   private handleClick(event: Event): void {
@@ -167,13 +185,17 @@ export class LcarsButton extends LcarsElement {
       return;
     }
 
+    if (this.sound && this.sound !== 'none') {
+      playLcarsSound(this.sound);
+    }
+
     this.dispatchEvent(
       new CustomEvent<LcarsClickEventDetail>('lcars-click', {
         bubbles: true,
         composed: true,
         detail: {
           color: this.color,
-          shape: this.shape,
+          shape: this.safeShape,
           sound: this.sound,
         },
       })
@@ -185,7 +207,21 @@ export class LcarsButton extends LcarsElement {
       return;
     }
 
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.click();
+    } else if (event.key === ' ') {
+      // Native buttons activate Space on keyup; suppress scrolling here only.
+      event.preventDefault();
+    }
+  }
+
+  private handleKeyUp(event: KeyboardEvent): void {
+    if (this.disabled) {
+      return;
+    }
+
+    if (event.key === ' ') {
       event.preventDefault();
       this.click();
     }
@@ -193,10 +229,10 @@ export class LcarsButton extends LcarsElement {
 
   override render(): TemplateResult {
     const bgColor = this.resolveColor(this.color, '--lcars-color-primary');
-    const shapeClass = `shape-${this.shape}`;
+    const shapeClass = `shape-${this.safeShape}`;
     const activeClass = this.active ? 'active' : '';
 
-    const isBracket = this.shape === 'bracket';
+    const isBracket = this.safeShape === 'bracket';
     const styleString = isBracket ? `color: ${bgColor};` : `background-color: ${bgColor};`;
 
     return html`

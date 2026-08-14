@@ -17,6 +17,9 @@
     --lcars-color-surface: #120e06;
     --lcars-color-text: var(--lcars-tng-butterscotch);
     --lcars-color-text-muted: var(--lcars-tng-tan);
+    --lcars-color-on-accent: #000000;
+    --lcars-color-overlay: rgba(0, 0, 0, 0.4);
+    --lcars-color-border-subtle: rgba(255, 255, 255, 0.1);
   }
 
   /* DS9 / Voyager Era Theme */

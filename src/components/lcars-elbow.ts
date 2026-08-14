@@ -4,7 +4,7 @@
  */
 
 import { html, css, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 
 export type LcarsElbowDirection = 'top-left' | 'bottom-left' | 'top-right' | 'bottom-right';
@@ -12,7 +12,6 @@ export type LcarsElbowDirection = 'top-left' | 'bottom-left' | 'top-right' | 'bo
 /**
  * `<lcars-elbow>` renders an authentic curved LCARS L-shape corner block.
  */
-@customElement('lcars-elbow')
 export class LcarsElbow extends LcarsElement {
   static override styles = css`
     :host {
@@ -25,6 +24,24 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       box-sizing: border-box;
       position: relative;
+    }
+
+    .arch,
+    .bar-extension {
+      background-color: var(--elbow-color, var(--lcars-color-primary));
+    }
+
+    .bar-extension {
+      position: relative;
+    }
+
+    /* Concave inner fillet joining the bar to the column leg */
+    .bar-extension::after {
+      content: '';
+      position: absolute;
+      width: var(--lcars-radius-inner, 14px);
+      height: var(--lcars-radius-inner, 14px);
+      pointer-events: none;
     }
 
     /* Top-Left */
@@ -59,6 +76,16 @@ export class LcarsElbow extends LcarsElement {
       box-sizing: border-box;
     }
 
+    .elbow-container.top-left .bar-extension::after {
+      left: 0;
+      top: 100%;
+      background: radial-gradient(
+        circle at 100% 100%,
+        transparent calc(var(--lcars-radius-inner, 14px) - 0.5px),
+        var(--elbow-color, var(--lcars-color-primary)) var(--lcars-radius-inner, 14px)
+      );
+    }
+
     /* Bottom-Left */
     .elbow-container.bottom-left {
       flex-direction: column-reverse;
@@ -89,6 +116,16 @@ export class LcarsElbow extends LcarsElement {
       align-items: center;
       padding: 0 var(--lcars-gap-md, 8px);
       box-sizing: border-box;
+    }
+
+    .elbow-container.bottom-left .bar-extension::after {
+      left: 0;
+      bottom: 100%;
+      background: radial-gradient(
+        circle at 100% 0%,
+        transparent calc(var(--lcars-radius-inner, 14px) - 0.5px),
+        var(--elbow-color, var(--lcars-color-primary)) var(--lcars-radius-inner, 14px)
+      );
     }
 
     /* Top-Right */
@@ -125,6 +162,16 @@ export class LcarsElbow extends LcarsElement {
       box-sizing: border-box;
     }
 
+    .elbow-container.top-right .bar-extension::after {
+      right: 0;
+      top: 100%;
+      background: radial-gradient(
+        circle at 0% 100%,
+        transparent calc(var(--lcars-radius-inner, 14px) - 0.5px),
+        var(--elbow-color, var(--lcars-color-primary)) var(--lcars-radius-inner, 14px)
+      );
+    }
+
     /* Bottom-Right */
     .elbow-container.bottom-right {
       flex-direction: column-reverse;
@@ -159,13 +206,23 @@ export class LcarsElbow extends LcarsElement {
       box-sizing: border-box;
     }
 
+    .elbow-container.bottom-right .bar-extension::after {
+      right: 0;
+      bottom: 100%;
+      background: radial-gradient(
+        circle at 0% 0%,
+        transparent calc(var(--lcars-radius-inner, 14px) - 0.5px),
+        var(--elbow-color, var(--lcars-color-primary)) var(--lcars-radius-inner, 14px)
+      );
+    }
+
     .title-text {
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
       font-size: var(--lcars-font-size-sm, 0.875rem);
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
       text-transform: uppercase;
-      color: #000000;
+      color: var(--lcars-color-on-accent, #000000);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -177,40 +234,46 @@ export class LcarsElbow extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-widest, 0.12em);
       text-transform: uppercase;
-      color: #000000;
+      color: var(--lcars-color-on-accent, #000000);
       white-space: nowrap;
     }
   `;
 
   @property({ type: String, reflect: true })
-  dir: LcarsElbowDirection = 'top-left';
+  orientation: LcarsElbowDirection = 'top-left';
 
   @property({ type: String })
   color = 'primary';
 
   @property({ type: String })
-  override title = '';
+  heading = '';
 
   @property({ type: String })
   label = '';
 
   override render(): TemplateResult {
     const bgColor = this.resolveColor(this.color, '--lcars-color-primary');
-    const directionClass = ['top-left', 'bottom-left', 'top-right', 'bottom-right'].includes(this.dir)
-      ? this.dir
+    const orientationClass = ['top-left', 'bottom-left', 'top-right', 'bottom-right'].includes(
+      this.orientation
+    )
+      ? this.orientation
       : 'top-left';
 
-    const isTop = directionClass.startsWith('top');
+    const isTop = orientationClass.startsWith('top');
     const rowClass = isTop ? 'top-row' : 'bottom-row';
 
     return html`
-      <div class="elbow-container ${directionClass}">
+      <div class="elbow-container ${orientationClass}" style="--elbow-color: ${bgColor};">
         <div class="${rowClass}">
-          <div class="arch" style="background-color: ${bgColor};">
-            ${this.label ? html`<span class="label-text">${this.label}</span>` : html`<slot name="label"></slot>`}
+          <div class="arch">
+            <slot name="label">
+              ${this.label ? html`<span class="label-text">${this.label}</span>` : ''}
+            </slot>
           </div>
-          <div class="bar-extension" style="background-color: ${bgColor};">
-            ${this.title ? html`<span class="title-text">${this.title}</span>` : html`<slot></slot>`}
+          <div class="bar-extension">
+            <slot>
+              ${this.heading ? html`<span class="title-text">${this.heading}</span>` : ''}
+            </slot>
           </div>
         </div>
       </div>

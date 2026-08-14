@@ -4,13 +4,12 @@
  */
 
 import { html, css, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 
 /**
  * `<lcars-panel>` renders a framed LCARS content container with header bar and bracket borders.
  */
-@customElement('lcars-panel')
 export class LcarsPanel extends LcarsElement {
   static override styles = css`
     :host {
@@ -28,7 +27,7 @@ export class LcarsPanel extends LcarsElement {
     }
 
     .panel-container.bordered {
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--lcars-color-border-subtle, rgba(255, 255, 255, 0.1));
       border-left: var(--lcars-border-width, 3px) solid var(--panel-color, var(--lcars-color-secondary));
     }
 
@@ -49,7 +48,7 @@ export class LcarsPanel extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
       text-transform: uppercase;
-      color: #000000;
+      color: var(--lcars-color-on-accent, #000000);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -61,7 +60,7 @@ export class LcarsPanel extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-widest, 0.12em);
       text-transform: uppercase;
-      color: #000000;
+      color: var(--lcars-color-on-accent, #000000);
       opacity: 0.85;
     }
 
@@ -74,7 +73,7 @@ export class LcarsPanel extends LcarsElement {
   `;
 
   @property({ type: String })
-  override title = '';
+  heading = '';
 
   @property({ type: String })
   subtitle = '';
@@ -82,22 +81,22 @@ export class LcarsPanel extends LcarsElement {
   @property({ type: String })
   color = 'secondary';
 
-  @property({ type: Boolean, reflect: true })
-  bordered = true;
+  @property({ type: Boolean, reflect: true, attribute: 'no-border' })
+  noBorder = false;
 
   override render(): TemplateResult {
     const accentColor = this.resolveColor(this.color, '--lcars-color-secondary');
-    const borderClass = this.bordered ? 'bordered' : '';
+    const borderClass = this.noBorder ? '' : 'bordered';
 
     return html`
       <div
         class="panel-container ${borderClass}"
         style="--panel-color: ${accentColor};"
       >
-        ${this.title || this.subtitle
+        ${this.heading || this.subtitle
           ? html`
               <div class="panel-header">
-                <span class="panel-title">${this.title}</span>
+                <span class="panel-title">${this.heading}</span>
                 ${this.subtitle ? html`<span class="panel-subtitle">${this.subtitle}</span>` : ''}
               </div>
             `
