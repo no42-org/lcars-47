@@ -31,7 +31,10 @@ test-watch: node_modules ## Run tests in watch mode
 build: node_modules ## Build ESM + IIFE + CSS + declarations, then verify dist
 	$(NPM) run build
 
-verify: typecheck test build ## Full gate: types, tests, build and dist checks
+# Build before test on purpose: test/dist.test.ts gates its built-artifact
+# assertions on dist/ existing, so running tests first silently skips them on
+# every clean checkout, which is exactly what CI is.
+verify: typecheck build test ## Full gate: types, build, tests and dist checks
 
 dev: node_modules ## Start the workbench dev server
 	$(NPM) run dev
