@@ -21,7 +21,10 @@ export default defineConfig(({ mode }) => {
         ? []
         : [
             dts({
-              rollupTypes: true,
+              // v5 renamed rollupTypes -> bundleTypes. Bundling matters here:
+              // verify-dist and dist.test.ts both assert the public API is
+              // declared in a single dist/index.d.ts.
+              bundleTypes: true,
               include: ['src/**/*.ts'],
             }),
           ]),
