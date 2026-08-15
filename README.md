@@ -5,6 +5,15 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 # @no42-org/lcars-47
 
+[![License: LGPL-3.0-or-later](https://img.shields.io/badge/license-LGPL--3.0--or--later-blue.svg)](LICENSE)
+
+<!-- The CI and release badges below 404 while this repository is private,
+     because GitHub's badge endpoint is unauthenticated for camo. Uncomment
+     them when the repo goes public rather than shipping broken images.
+[![CI](https://github.com/no42-org/lcars-47/actions/workflows/ci.yml/badge.svg)](https://github.com/no42-org/lcars-47/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/no42-org/lcars-47)](https://github.com/no42-org/lcars-47/releases/latest)
+-->
+
 Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user interface component library built with Lit Web Components, pure CSS design tokens, and a zero-asset Web Audio API procedural synthesizer.
 
 ## Features
