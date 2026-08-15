@@ -1,0 +1,56 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not report security vulnerabilities here — see [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you observed, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: >-
+        Minimal markup or a test case. Components are browser-side, so a small
+        HTML snippet using the element is usually enough.
+      render: html
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Package version or commit SHA.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: entry-point
+    attributes:
+      label: How are you loading the library
+      options:
+        - npm / bundler (ESM entry)
+        - CDN script tag (IIFE bundle)
+        - Stylesheet only
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Firefox 141, Safari 19

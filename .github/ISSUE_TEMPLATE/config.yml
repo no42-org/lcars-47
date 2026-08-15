@@ -1,0 +1,10 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/no42-org/lcars-47/blob/main/SECURITY.md
+    about: Do not open a public issue. Report privately by email, see SECURITY.md.
+  - name: Contributing guide
+    url: https://github.com/no42-org/lcars-47/blob/main/CONTRIBUTING.md
+    about: DCO sign-off, AI-assistance policy, and the make targets CI runs.
