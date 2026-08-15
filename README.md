@@ -48,8 +48,8 @@ import { setLcarsTheme, playLcarsSound } from '@no42-org/lcars-47';
 Include the standalone CSS and JavaScript bundles directly via `<script>` tag:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.css" />
-<script src="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.iife.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.css" />
+<script src="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.iife.js"></script>
 ```
 
 All custom elements are automatically registered, and utility functions are available under `window.Lcars`.
@@ -64,10 +64,10 @@ All custom elements are automatically registered, and utility functions are avai
   <head>
     <meta charset="UTF-8" />
     <title>LCARS Console</title>
-    <link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.css" />
     <!-- The IIFE bundle is self-contained. The ESM entry externalizes lit, so
          it needs a bundler (or an import map) rather than a plain script tag. -->
-    <script src="https://unpkg.com/@no42-org/lcars-47@0.1.0/dist/lcars.iife.js"></script>
+    <script src="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.iife.js"></script>
   </head>
   <body>
     <lcars-frame theme="tng">
