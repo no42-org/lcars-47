@@ -67,8 +67,16 @@ Build provenance for the npm tarball is attested to the GitHub attestation store
 gh attestation verify no42-org-lcars-47-X.Y.Z.tgz --repo no42-org/lcars-47
 ```
 
+## Where the package is published
+
+The release workflow publishes to **GitHub Packages** (`npm.pkg.github.com`) as its last step, after every other step has succeeded — publishing is the one action here that cannot be undone, since a version number cannot be reused.
+
+It publishes the **exact tarball** that was checksummed, signed and attested, rather than repacking, so what a user installs is what the signature covers. Authentication uses the built-in `GITHUB_TOKEN`; there is no registry secret to manage. Prerelease tags publish under the `next` dist-tag so they never become `latest`.
+
+Consumers must authenticate to install from GitHub Packages, **even though the package is public** — that is a registry limitation, not a licensing one. The README documents the `.npmrc` this needs, and points anyone who would rather not authenticate at the release assets, which serve anonymously.
+
 ## Not yet wired up
 
-**Publishing to the npm registry.** The release workflow builds and signs the tarball but does not `npm publish` it. Doing so needs an `NPM_TOKEN` secret and a deliberate decision to make the package public, since the repository is currently private. When that happens, publish with `--provenance` so npm carries the same attestation, and document the registry URL here.
+**Publishing to npmjs.com.** Would make `npm install` work with no `.npmrc` and no token, and would light up the unpkg and jsDelivr CDN paths, which mirror npmjs.com only and cannot serve GitHub Packages. It needs an npm account and an `NPM_TOKEN` secret. Publish with `--provenance` so npm carries the same SLSA attestation this pipeline already produces.
 
 **Preview builds from `main`.** The audit checklist expects a rolling preview. This project ships no container image, so the useful equivalent is a `preview` prerelease refreshed on each push to `main`. Not implemented yet.

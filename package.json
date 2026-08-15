@@ -52,6 +52,10 @@
     "vitest": "^4.1.10"
   },
   "license": "LGPL-3.0-or-later",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
   "author": "Ronny Trommer <ronny@no42.org>",
   "dependencies": {
     "lit": "^3.3.3"

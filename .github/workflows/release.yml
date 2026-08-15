@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write # create the release and upload assets
+      packages: write # publish to GitHub Packages
       id-token: write # cosign keyless signing
       attestations: write # SLSA build provenance
     steps:
@@ -48,6 +49,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
+          # Writes the .npmrc that points the scope at GitHub Packages and
+          # reads NODE_AUTH_TOKEN when publishing.
+          registry-url: https://npm.pkg.github.com
+          scope: '@no42-org'
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
@@ -108,3 +113,23 @@ jobs:
             gh release create "$TAG" --draft --verify-tag \
               --title "$TAG" --notes "Release notes pending." $PRE
           find release -type f -exec gh release upload "$TAG" --clobber {} +
+
+      # Last, because publishing is the one irreversible step here: a version
+      # cannot be re-published once taken. Everything else has been verified by
+      # the time this runs.
+      #
+      # Publishes the exact tarball that was checksummed, signed and attested,
+      # rather than repacking, so the artifact users install is the one the
+      # signature covers.
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # ./ prefix is required: npm reads a bare "release/x.tgz" as a git
+          # shorthand (owner/repo) and tries to clone it.
+          tarball="$(find ./release -name '*.tgz' -type f)"
+          case "$TAG" in
+            *-*) npm publish "$tarball" --tag next ;;
+            *)   npm publish "$tarball" ;;
+          esac
