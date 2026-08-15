@@ -29,7 +29,19 @@ Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user inte
 
 ### Package Manager (ESM)
 
-Install via npm:
+The package is published to **GitHub Packages**. Point the scope at that registry once, in an `.npmrc` next to your `package.json`:
+
+```
+@no42-org:registry=https://npm.pkg.github.com
+```
+
+GitHub Packages requires authentication **even for public packages**, so you also need a personal access token with the `read:packages` scope:
+
+```
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Then install as usual:
 
 ```bash
 npm install @no42-org/lcars-47
@@ -43,16 +55,18 @@ import '@no42-org/lcars-47/css';
 import { setLcarsTheme, playLcarsSound } from '@no42-org/lcars-47';
 ```
 
-### Standalone CDN (IIFE)
+### Standalone bundle (no build tooling, no account)
 
-Include the standalone CSS and JavaScript bundles directly via `<script>` tag:
+If you would rather not authenticate, the release assets are served anonymously. Grab the two files straight from a release:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.css" />
-<script src="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.iife.js"></script>
+<link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.0.1/lcars.css" />
+<script src="https://github.com/no42-org/lcars-47/releases/download/v0.0.1/lcars.iife.js"></script>
 ```
 
-All custom elements are automatically registered, and utility functions are available under `window.Lcars`.
+All custom elements are registered automatically, and the utility functions are available under `window.Lcars`.
+
+For production, download the files and serve them yourself rather than hot-linking, and verify them first — every release ships signed checksums, see [RELEASING.md](RELEASING.md).
 
 ---
 
@@ -64,10 +78,10 @@ All custom elements are automatically registered, and utility functions are avai
   <head>
     <meta charset="UTF-8" />
     <title>LCARS Console</title>
-    <link rel="stylesheet" href="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.css" />
+    <link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.0.1/lcars.css" />
     <!-- The IIFE bundle is self-contained. The ESM entry externalizes lit, so
          it needs a bundler (or an import map) rather than a plain script tag. -->
-    <script src="https://unpkg.com/@no42-org/lcars-47@0.0.1/dist/lcars.iife.js"></script>
+    <script src="https://github.com/no42-org/lcars-47/releases/download/v0.0.1/lcars.iife.js"></script>
   </head>
   <body>
     <lcars-frame theme="tng">
