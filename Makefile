@@ -36,6 +36,14 @@ build: node_modules ## Build ESM + IIFE + CSS + declarations, then verify dist
 # every clean checkout, which is exactly what CI is.
 verify: typecheck build test ## Full gate: types, build, tests and dist checks
 
+release-build: verify ## Assemble signed-release inputs into release/
+	rm -rf release && mkdir -p release
+	# The npm tarball is what consumers actually install; pack it so the
+	# released artifact is byte-identical to the publishable one.
+	$(NPM) pack --pack-destination release
+	# Standalone bundles for direct download / CDN mirroring.
+	cp dist/lcars.iife.js dist/lcars.css dist/index.d.ts release/
+
 dev: node_modules ## Start the workbench dev server
 	$(NPM) run dev
 

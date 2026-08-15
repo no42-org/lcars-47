@@ -3,6 +3,7 @@ node_modules/
 
 # Production build artifacts
 dist/
+release/
 
 # OS and system files
 .DS_Store
