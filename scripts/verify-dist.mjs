@@ -76,6 +76,17 @@ if (dts !== undefined) {
   }
 }
 
+// Declaration bundling fails soft: the dts plugin logs "skip bundle declaration
+// files" and emits a tree of per-module .d.ts instead of one entry, which the
+// symbol check above still passes because the symbols remain re-exported. Assert
+// self-containment so a degraded build cannot ship quietly.
+if (dts !== undefined && /\bfrom\s*['"]\.\.?\//.test(dts)) {
+  errors.push(
+    'dist/index.d.ts imports from relative paths; declaration bundling was skipped ' +
+      '(is @microsoft/api-extractor installed?)'
+  );
+}
+
 // The README documents these specifiers; a narrowed exports map must keep them
 // resolvable.
 try {
