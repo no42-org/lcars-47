@@ -52,3 +52,9 @@ updates:
       # deliberately rather than as a routine PR.
       - dependency-name: lit
         update-types: [version-update:semver-major]
+      # TypeScript 7 dropped the JavaScript Compiler API that declaration
+      # bundling depends on, and API Extractor cannot resolve DOM lib symbols
+      # without it. Adopting 7.x today would cost the single bundled
+      # dist/index.d.ts that RELEASING.md advertises. See issue #6.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
