@@ -24,7 +24,7 @@ describe('LCARS Design Tokens & Theme Manager', () => {
   });
 
   it('exports valid version and supported theme list', () => {
-    expect(VERSION).toBe('0.1.0');
+    expect(VERSION).toBe('0.0.1');
     expect(LCARS_THEMES).toEqual(['tng', 'ds9', 'nemesis', 'contrast']);
     expect(LCARS_THEME_ALIASES).toEqual({
       voyager: 'ds9',
