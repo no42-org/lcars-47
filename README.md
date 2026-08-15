@@ -217,6 +217,21 @@ unmuteAudio();
 
 ---
 
+## Support
+
+This library is free software under [LGPL-3.0-or-later](LICENSE), and stays that way whether or not anyone donates. Nothing here is gated, time-limited, or held back for supporters.
+
+If it saves you time and you would like to put something toward its upkeep — releases, security fixes, issue triage, and keeping the docs honest — there are two one-off options:
+
+- [GitHub Sponsors](https://github.com/sponsors/indigo423)
+- [Ko-fi](https://ko-fi.com/indigo423)
+
+There are no reward tiers and no perks attached: a donation buys a thank-you and, if you want it, your name in [SPONSORS.md](SPONSORS.md). Nothing more, deliberately.
+
+Not everything useful costs money. A clear bug report with a reproduction, a documentation fix, or simply telling someone the project exists all help just as much.
+
+---
+
 ## License
 
 LGPL-3.0-or-later. Copyright 2026 Ronny Trommer <ronny@no42.org>.
