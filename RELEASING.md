@@ -40,7 +40,7 @@ Prerelease tags (`vX.Y.Z-rc1`) are detected by the hyphen and marked `--prerelea
 | `index.d.ts` | Bundled TypeScript declarations for the whole public API |
 | `sbom.spdx.json` | SPDX software bill of materials |
 | `checksums.txt` | SHA-256 of every other asset |
-| `checksums.txt.sig` / `.pem` | cosign keyless signature and certificate |
+| `checksums.txt.bundle` | cosign keyless Sigstore bundle (signature + certificate) |
 
 ## Verifying a release
 
@@ -48,11 +48,12 @@ Checksums are signed with cosign keyless (GitHub OIDC), so verification needs no
 
 ```bash
 cosign verify-blob checksums.txt \
-  --signature checksums.txt.sig \
-  --certificate checksums.txt.pem \
+  --bundle checksums.txt.bundle \
   --certificate-identity-regexp 'https://github.com/no42-org/lcars-47/\.github/workflows/release\.yml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
+
+cosign v3 emits a single Sigstore bundle rather than separate `.sig` and `.pem` files.
 
 Then confirm the artifact you downloaded appears in the verified `checksums.txt`:
 

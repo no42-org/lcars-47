@@ -84,9 +84,12 @@ jobs:
           tmp="$(mktemp)"
           find . -type f -print0 | sort -z | xargs -0 sha256sum > "$tmp"
           mv "$tmp" checksums.txt
+          # cosign v3 emits a Sigstore bundle carrying both the signature and
+          # the certificate. Passing only --output-signature/--output-certificate
+          # leaves the bundle path empty and fails with
+          # "create bundle file: open : no such file or directory".
           cosign sign-blob --yes \
-            --output-signature checksums.txt.sig \
-            --output-certificate checksums.txt.pem \
+            --bundle checksums.txt.bundle \
             checksums.txt
 
       - name: Attest build provenance
