@@ -28,6 +28,9 @@
         height: 100vh;
         padding: 12px;
         box-sizing: border-box;
+        /* The frame defaults to a full 100dvh, which overflows this padded
+           container and clips the footer row. */
+        --lcars-frame-min-height: calc(100dvh - 24px);
       }
 
       .top-header {
@@ -315,7 +318,7 @@
 
         <!-- Footer Elements -->
         <div slot="footer-readout">SYSTEM STATUS: ALL DECKS NOMINAL // EPS GRID BALANCED</div>
-        <lcars-elbow slot="elbow-br" orientation="bottom-right" label="GRID OK"></lcars-elbow>
+        <lcars-elbow slot="elbow-bl" orientation="bottom-left" label="GRID OK"></lcars-elbow>
       </lcars-frame>
     </div>
 

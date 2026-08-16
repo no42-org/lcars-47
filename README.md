@@ -103,7 +103,7 @@ For production, download the files and serve them yourself rather than hot-linki
       </div>
 
       <div slot="footer-readout">SYSTEM STATUS: NOMINAL</div>
-      <lcars-elbow slot="elbow-br" orientation="bottom-right" label="SYS OK"></lcars-elbow>
+      <lcars-elbow slot="elbow-bl" orientation="bottom-left" label="SYS OK"></lcars-elbow>
     </lcars-frame>
   </body>
 </html>
@@ -135,7 +135,8 @@ setLcarsTheme('ds9'); // 'tng' | 'ds9' | 'nemesis' | 'contrast'
 
 ### `<lcars-frame>`
 Responsive 2D CSS grid layout wrapping standard LCARS interfaces.
-- **Slots**: `top-bar`, `elbow-tl`, `sidebar`, `main`, `footer-readout`, `footer`, `elbow-br`, plus the default slot (rendered in the main area).
+- **Slots**: `top-bar`, `elbow-tl`, `sidebar`, `main`, `footer-readout`, `footer`, `elbow-bl`, plus the default slot (rendered in the main area).
+- `elbow-tl` shares the header row with `top-bar`, and `elbow-bl` shares the footer row with `footer-readout`: the elbow is placed first and sized by its own arch plus heading, and the bar text follows it on the same line.
 - **Properties**: `theme` (`'tng' | 'ds9' | 'nemesis' | 'contrast'`).
 
 ### `<lcars-elbow>`

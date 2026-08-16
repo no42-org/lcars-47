@@ -28,9 +28,9 @@ export class LcarsFrame extends LcarsElement {
       grid-template-columns: var(--lcars-sidebar-width, 160px) 1fr;
       grid-template-rows: auto 1fr auto;
       grid-template-areas:
-        'elbow-tl top-bar'
-        'sidebar  main'
-        'elbow-br footer';
+        'header  header'
+        'sidebar main'
+        'footer  footer';
       gap: var(--lcars-gap-sm, 4px);
       width: 100%;
       min-height: calc(100vh - 2 * var(--lcars-gap-md, 8px));
@@ -38,14 +38,37 @@ export class LcarsFrame extends LcarsElement {
       box-sizing: border-box;
     }
 
-    .slot-elbow-tl {
-      grid-area: elbow-tl;
+    /* The elbow and the bar next to it share one row: the elbow is as wide as
+       its own arch plus heading, so a grid column would either clip it or let it
+       overflow onto the bar text. */
+    .slot-header {
+      grid-area: header;
       display: flex;
+      align-items: flex-start;
+      gap: var(--lcars-gap-md, 8px);
     }
 
-    .slot-top-bar {
-      grid-area: top-bar;
+    .slot-footer-row {
+      grid-area: footer;
       display: flex;
+      align-items: flex-end;
+      gap: var(--lcars-gap-md, 8px);
+    }
+
+    .slot-elbow-tl,
+    .slot-elbow-bl {
+      display: flex;
+      flex: 0 0 auto;
+    }
+
+    /* Bar-height bands pinned to the same edge as the elbow's bar extension, so
+       their text sits on the elbow heading's line. */
+    .slot-top-bar,
+    .slot-footer {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      height: var(--lcars-bar-height, 28px);
       align-items: center;
       gap: var(--lcars-gap-sm, 4px);
     }
@@ -68,30 +91,15 @@ export class LcarsFrame extends LcarsElement {
       overflow: auto;
     }
 
-    .slot-footer {
-      grid-area: footer;
-      display: flex;
-      align-items: center;
-      gap: var(--lcars-gap-sm, 4px);
-    }
-
-    .slot-elbow-br {
-      grid-area: elbow-br;
-      display: flex;
-      justify-content: flex-start;
-    }
-
     /* Responsive adjustments for narrow screens */
     @media (max-width: 600px) {
       .frame-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr auto auto auto;
+        grid-template-rows: auto 1fr auto auto;
         grid-template-areas:
-          'elbow-tl'
-          'top-bar'
+          'header'
           'main'
           'sidebar'
-          'elbow-br'
           'footer';
       }
 
@@ -99,18 +107,34 @@ export class LcarsFrame extends LcarsElement {
         flex-direction: row;
         flex-wrap: wrap;
       }
+
+      .slot-header,
+      .slot-footer-row {
+        flex-wrap: wrap;
+      }
+
+      /* Too little width to sit beside the elbow: drop onto an own line and let
+         the bar text wrap instead of spilling out of the band. */
+      .slot-top-bar,
+      .slot-footer {
+        flex-basis: 100%;
+        height: auto;
+        min-height: var(--lcars-bar-height, 28px);
+      }
     }
   `;
 
   override render(): TemplateResult {
     return html`
       <div class="frame-grid">
-        <div class="slot-elbow-tl">
-          <slot name="elbow-tl"></slot>
-        </div>
+        <div class="slot-header">
+          <div class="slot-elbow-tl">
+            <slot name="elbow-tl"></slot>
+          </div>
 
-        <div class="slot-top-bar">
-          <slot name="top-bar"></slot>
+          <div class="slot-top-bar">
+            <slot name="top-bar"></slot>
+          </div>
         </div>
 
         <aside class="slot-sidebar">
@@ -122,13 +146,15 @@ export class LcarsFrame extends LcarsElement {
           <slot name="main"></slot>
         </main>
 
-        <div class="slot-footer">
-          <slot name="footer-readout"></slot>
-          <slot name="footer"></slot>
-        </div>
+        <div class="slot-footer-row">
+          <div class="slot-elbow-bl">
+            <slot name="elbow-bl"></slot>
+          </div>
 
-        <div class="slot-elbow-br">
-          <slot name="elbow-br"></slot>
+          <div class="slot-footer">
+            <slot name="footer-readout"></slot>
+            <slot name="footer"></slot>
+          </div>
         </div>
       </div>
     `;

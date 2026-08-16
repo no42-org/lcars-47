@@ -31,6 +31,12 @@ export class LcarsElbow extends LcarsElement {
       background-color: var(--elbow-color, var(--lcars-color-primary));
     }
 
+    /* The label rides in a band as tall as the bar extension, pinned to the same
+       edge, so it lines up with the heading instead of floating above it. */
+    .arch {
+      line-height: var(--lcars-bar-height, 28px);
+    }
+
     .bar-extension {
       position: relative;
     }
@@ -63,7 +69,8 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
-      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      /* Clear the corner curve on the rounded side, or the label is cut by it. */
+      padding: 0 var(--lcars-gap-md, 8px) 0 var(--lcars-radius-elbow, 28px);
       box-sizing: border-box;
     }
 
@@ -105,7 +112,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-end;
       justify-content: flex-start;
-      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      padding: 0 var(--lcars-gap-md, 8px) 0 var(--lcars-radius-elbow, 28px);
       box-sizing: border-box;
     }
 
@@ -148,7 +155,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-start;
       justify-content: flex-end;
-      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      padding: 0 var(--lcars-radius-elbow, 28px) 0 var(--lcars-gap-md, 8px);
       box-sizing: border-box;
     }
 
@@ -192,7 +199,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-end;
       justify-content: flex-end;
-      padding: var(--lcars-gap-sm, 4px) var(--lcars-gap-md, 8px);
+      padding: 0 var(--lcars-radius-elbow, 28px) 0 var(--lcars-gap-md, 8px);
       box-sizing: border-box;
     }
 
