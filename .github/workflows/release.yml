@@ -70,6 +70,11 @@ jobs:
 
       - run: make install
 
+      # release-build re-runs the full gate, which now includes the browser
+      # layout checks. Without this the release aborts after the PR gates have
+      # already passed.
+      - run: make install-browsers
+
       - run: make release-build
 
       # SBOM must exist before checksums are computed, or it ships unverifiable.

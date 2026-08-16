@@ -28,8 +28,13 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createServer, type ViteDevServer } from 'vite';
 import { chromium, type Browser, type Page } from 'playwright';
 
-/** Text that shares a line should share a centre; 1px absorbs sub-pixel layout. */
-const CENTRE_TOLERANCE_PX = 1;
+/**
+ * Slack for sub-pixel layout. Several of these invariants are exact by
+ * construction — the label's padding and the corner radius resolve from the
+ * same token, so the label lands precisely on the arc — and a strict comparison
+ * would fail on a fractional device pixel ratio or a radius expressed in `rem`.
+ */
+const SUBPIXEL_TOLERANCE_PX = 1;
 
 const VIEWPORT = { width: 1440, height: 900 };
 
@@ -56,11 +61,20 @@ beforeAll(async () => {
 
   page = await browser.newPage({ viewport: VIEWPORT });
   await page.goto(url, { waitUntil: 'networkidle' });
-  // Custom elements are registered by a module import; wait for the frame to
-  // have rendered its grid before measuring anything inside it.
-  await page.waitForFunction(
-    () => !!document.querySelector('lcars-frame')?.shadowRoot?.querySelector('.frame-grid')
-  );
+  // Custom elements are registered by a module import, and the frame and the
+  // elbows are separate Lit elements with independently scheduled first
+  // updates. Wait for every shadow root these assertions reach into, or a
+  // measurement can dereference null instead of waiting.
+  await page.waitForFunction(() => {
+    const frame = document.querySelector('lcars-frame');
+    const arch = (slot: string) =>
+      frame?.querySelector(`lcars-elbow[slot="${slot}"]`)?.shadowRoot?.querySelector('.arch');
+    return !!(
+      frame?.shadowRoot?.querySelector('.frame-grid') &&
+      arch('elbow-tl') &&
+      arch('elbow-bl')
+    );
+  });
 }, 120_000);
 
 afterAll(async () => {
@@ -110,7 +124,10 @@ describe('frame and elbow layout', () => {
     const cy = m.headerArch.top + r;
     const inCornerSquare = m.headerLabel.left < cx && m.headerLabel.top < cy;
     const distanceFromArcCentre = Math.hypot(cx - m.headerLabel.left, cy - m.headerLabel.top);
-    const clipped = inCornerSquare && distanceFromArcCentre > r;
+    // The label lands exactly on the arc by construction (its padding and the
+    // radius are the same token), so compare with slack or a fractional pixel
+    // fails a layout that is correct.
+    const clipped = inCornerSquare && distanceFromArcCentre > r + SUBPIXEL_TOLERANCE_PX;
 
     expect(
       clipped,
@@ -121,17 +138,17 @@ describe('frame and elbow layout', () => {
   it('sits the elbow label on the same line as the elbow heading', async () => {
     const m = await measure();
     expect(Math.abs(m.headerLabel.centreY - m.headerHeading.centreY)).toBeLessThanOrEqual(
-      CENTRE_TOLERANCE_PX
+      SUBPIXEL_TOLERANCE_PX
     );
   });
 
   it('sits the top-bar text on the same line as the elbow heading', async () => {
     const m = await measure();
     expect(Math.abs(m.topBarContent.centreY - m.headerHeading.centreY)).toBeLessThanOrEqual(
-      CENTRE_TOLERANCE_PX
+      SUBPIXEL_TOLERANCE_PX
     );
     expect(Math.abs(m.topBarBand.centreY - m.headerHeading.centreY)).toBeLessThanOrEqual(
-      CENTRE_TOLERANCE_PX
+      SUBPIXEL_TOLERANCE_PX
     );
   });
 
@@ -146,7 +163,7 @@ describe('frame and elbow layout', () => {
   it('sits the footer readout on the same line as the footer elbow label', async () => {
     const m = await measure();
     expect(Math.abs(m.footerReadout.centreY - m.footerLabel.centreY)).toBeLessThanOrEqual(
-      CENTRE_TOLERANCE_PX
+      SUBPIXEL_TOLERANCE_PX
     );
     expect(m.footerReadout.left).toBeGreaterThan(m.footerLabel.right);
   });
