@@ -7,6 +7,18 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 Versions follow [SemVer](https://semver.org/), derived from the [Conventional Commits](https://www.conventionalcommits.org/) since the previous tag: a `BREAKING CHANGE` or `!` bumps major, `feat` bumps minor, anything else bumps patch.
 
+**While the major version is `0`, the whole version shifts down one place:**
+
+| commits since the tag | 1.0.0 onward | while `0.x` |
+| :--- | :--- | :--- |
+| `BREAKING CHANGE` or `!` | major | **minor** (`0.0.2` → `0.1.0`) |
+| `feat` | minor | patch (`0.0.2` → `0.0.3`) |
+| anything else | patch | patch (`0.0.2` → `0.0.3`) |
+
+This is [SemVer §4](https://semver.org/#spec-item-4): major version zero is initial development and the public API is not yet stable, so a breaking change costs a minor rather than declaring 1.0.
+Breaking changes still carry a `BREAKING CHANGE:` footer and a `!` in the subject — the footer is the migration note for consumers, independent of which digit moves.
+The table's left column takes over from the first `1.0.0` release.
+
 A release is triggered by **pushing a `vX.Y.Z` tag**. Nothing else publishes.
 
 ## Cutting a release
