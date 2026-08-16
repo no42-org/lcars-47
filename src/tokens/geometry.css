@@ -18,6 +18,9 @@
     --lcars-sidebar-width: 160px;
     --lcars-elbow-width: 160px;
     --lcars-elbow-height: 60px;
+    /* Height of a <lcars-frame> shell. Set it to 100% to fill a sized
+       container instead of the viewport. */
+    --lcars-frame-height: 100dvh;
 
     /* Touch Targets */
     --lcars-touch-target-min-width: 80px;

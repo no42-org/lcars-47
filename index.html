@@ -30,7 +30,20 @@
         box-sizing: border-box;
         /* The frame defaults to a full 100dvh, which overflows this padded
            container and clips the footer row. */
-        --lcars-frame-min-height: calc(100dvh - 24px);
+        --lcars-frame-height: calc(100dvh - 24px);
+      }
+
+      /* Below the breakpoint the frame stops being a pinned shell and flows
+         with the document, so the page has to be allowed to scroll or the
+         footer is simply clipped away. Must follow the rules it overrides. */
+      @media (max-width: 600px) {
+        html,
+        body,
+        .app-container {
+          height: auto;
+          min-height: 100vh;
+          overflow: visible;
+        }
       }
 
       .top-header {
@@ -62,13 +75,15 @@
         margin-bottom: 2px;
       }
 
+      /* The frame's main region owns scrolling now. This used to carry
+         `height: 100%` and its own `overflow-y: auto` to work around a shell
+         that never scrolled; keeping them would mean two nested scrollers, and
+         a percentage height inside an auto-height column breaks the frame's
+         sizing below the breakpoint. */
       .main-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 16px;
-        height: 100%;
-        overflow-y: auto;
-        padding-right: 8px;
         box-sizing: border-box;
       }
 

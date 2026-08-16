@@ -144,6 +144,26 @@ Responsive 2D CSS grid layout wrapping standard LCARS interfaces.
 - `elbow-tl` shares the header row with `top-bar`, and `elbow-bl` shares the footer row with `footer-readout`: the elbow is placed first and sized by its own arch plus heading, and the bar text follows it on the same line.
 - **Properties**: `theme` (`'tng' | 'ds9' | 'nemesis' | 'contrast'`).
 
+#### Height and scrolling
+
+The frame is a **viewport shell**: it is exactly `--lcars-frame-height` tall (`100dvh` by default), its header, sidebar and footer stay put, and content that does not fit scrolls *inside* the frame rather than pushing it out of shape.
+
+| region | behaviour |
+| :--- | :--- |
+| `main`, `sidebar` | scroll their own content |
+| header and footer bars | fixed chrome, never scroll |
+| the page itself | does not scroll — the frame already fills the viewport |
+
+To put a frame inside a container instead of the viewport, give it a height and set the property:
+
+```html
+<div style="width: 800px; height: 400px">
+  <lcars-frame style="--lcars-frame-height: 100%"> … </lcars-frame>
+</div>
+```
+
+**Below 600px this reverses.** The frame becomes an ordinary block that flows with the document: regions grow to their natural height and *the page* scrolls, because a phone whose stacked sidebar is taller than half the viewport has no room left for a pinned shell. A host page that sets `overflow: hidden` on `body` must relax it at that width or the footer is clipped away.
+
 ### `<lcars-elbow>`
 Curved LCARS corner bracket rendered with CSS radii and a concave inner fillet.
 - **Properties**: `orientation` (`'top-left' | 'bottom-left' | 'top-right' | 'bottom-right'`), `heading`, `label`, `color`.

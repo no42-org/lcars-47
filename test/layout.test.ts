@@ -59,7 +59,7 @@ async function openWorkbench(viewport: { width: number; height: number }): Promi
     const frame = document.querySelector('lcars-frame');
     const arch = (slot: string) =>
       frame?.querySelector(`lcars-elbow[slot="${slot}"]`)?.shadowRoot?.querySelector('.arch');
-    return !!(frame?.shadowRoot?.querySelector('.frame-grid') && arch('elbow-tl') && arch('elbow-bl'));
+    return !!(frame?.shadowRoot?.querySelector('.slot-main') && arch('elbow-tl') && arch('elbow-bl'));
   });
   return p;
 }
