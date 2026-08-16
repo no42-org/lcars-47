@@ -342,7 +342,7 @@ describe('LCARS Geometric Framework Components', () => {
       document.body.appendChild(frame);
       await frame.updateComplete;
 
-      for (const name of ['elbow-tl', 'top-bar', 'sidebar', 'main', 'footer-readout', 'footer', 'elbow-br']) {
+      for (const name of ['elbow-tl', 'top-bar', 'sidebar', 'main', 'footer-readout', 'footer', 'elbow-bl']) {
         expect(
           frame.shadowRoot?.querySelector(`slot[name="${name}"]`),
           `missing slot: ${name}`
