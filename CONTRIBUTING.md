@@ -43,15 +43,20 @@ Write the body to explain *why*, wrapped at ~72 columns. What changed is already
 Everything runs through `make`; CI calls the same targets, so local and CI cannot drift.
 
 ```bash
-make install     # install from the lockfile
-make verify      # the full gate: typecheck, build, tests, dist checks
-make dev         # workbench dev server at index.html
-make test-watch  # tests in watch mode
+make install          # install from the lockfile
+make install-browsers # once: the browser the layout gate drives
+make verify           # the full gate: typecheck, build, tests, dist and layout checks
+make dev              # workbench dev server at index.html
+make test-watch       # tests in watch mode
+make test-layout      # just the browser layout gate
 ```
 
 Run a single test file with `npx vitest run test/keypad.test.ts`, or a single case with `-t "substring of the test name"`.
 
 `make verify` must pass before you open a PR. It is exactly what CI runs.
+
+The layout gate (`test/layout.test.ts`) drives the workbench in headless Chromium and asserts positions, because the unit suite runs under happy-dom, which has no layout engine and reports every element rectangle as zero.
+It fails rather than skips when the browser is missing, so run `make install-browsers` once after cloning.
 
 ## Conventions worth knowing
 

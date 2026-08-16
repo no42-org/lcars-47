@@ -30,6 +30,9 @@ jobs:
 
       - run: make install
 
+      # The layout gate drives a real browser; happy-dom cannot see geometry.
+      - run: make install-browsers
+
       - run: make verify
 
   workflows:

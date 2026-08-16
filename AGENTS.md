@@ -12,14 +12,17 @@ LCARS Web Component library. See README.md for usage, CONTRIBUTING.md for proces
 Everything goes through `make`; CI runs the same targets.
 
 ```bash
-make verify      # the gate: typecheck, build, test, dist checks
-make test        # tests only
+make verify      # the gate: typecheck, build, test, dist and layout checks
+make test        # unit tests only, no browser
+make test-layout # browser layout gate only
 make dev         # workbench at index.html
 ```
 
 Single test file: `npx vitest run test/keypad.test.ts`. Single case: add `-t "part of the name"`.
 
 `make verify` builds **before** testing on purpose — `test/dist.test.ts` skips its assertions when `dist/` is absent, so reordering silently drops five checks.
+
+Geometry is invisible to `make test`: happy-dom has no layout engine, so every `getBoundingClientRect()` there is zero. `test/layout.test.ts` runs from its own config (`vitest.layout.config.ts`, node environment) and measures the workbench in headless Chromium. It needs `make install-browsers` once, and fails rather than skips without it.
 
 ## Architecture
 

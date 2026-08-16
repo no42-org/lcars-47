@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install typecheck test test-watch build verify dev clean distclean
+.PHONY: help install install-browsers typecheck test test-watch test-layout build verify dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -14,6 +14,9 @@ help: ## Show available targets
 
 install: ## Install dependencies from the lockfile
 	$(NPM) ci
+
+install-browsers: node_modules ## Install the browser the layout gate drives
+	$(NPM) run install:browsers
 
 node_modules: package-lock.json
 	$(NPM) ci
@@ -28,13 +31,19 @@ test: node_modules ## Run the unit test suite once
 test-watch: node_modules ## Run tests in watch mode
 	$(NPM) run test:watch
 
+# Geometry is invisible to the unit suite: happy-dom has no layout engine, so
+# every rect there is zero. This drives the workbench in a real browser and
+# fails, never skips, when that browser is missing.
+test-layout: node_modules ## Run the browser layout gate
+	$(NPM) run test:layout
+
 build: node_modules ## Build ESM + IIFE + CSS + declarations, then verify dist
 	$(NPM) run build
 
 # Build before test on purpose: test/dist.test.ts gates its built-artifact
 # assertions on dist/ existing, so running tests first silently skips them on
 # every clean checkout, which is exactly what CI is.
-verify: typecheck build test ## Full gate: types, build, tests and dist checks
+verify: typecheck build test test-layout ## Full gate: types, build, tests, dist and layout checks
 
 release-build: verify ## Assemble signed-release inputs into release/
 	rm -rf release && mkdir -p release

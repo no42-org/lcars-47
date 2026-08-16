@@ -17,6 +17,12 @@
     "isolatedModules": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "test/**/*", "vite.config.ts", "vitest.config.ts"],
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.layout.config.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
