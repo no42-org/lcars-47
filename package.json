@@ -39,12 +39,15 @@
     "postbuild": "node scripts/verify-dist.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:layout": "vitest run --config vitest.layout.config.ts",
+    "install:browsers": "playwright install --with-deps chromium"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.12",
     "@types/node": "^26.2.0",
     "happy-dom": "^20.11.2",
+    "playwright": "^1.62.1",
     "typescript": "^6.0.3",
     "vite": "^8.2.1",
     "vite-plugin-dts": "^5.0.3",
