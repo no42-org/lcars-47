@@ -12,6 +12,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user interface component library built with Lit Web Components, pure CSS design tokens, and a zero-asset Web Audio API procedural synthesizer.
 
+![The LCARS 47 workbench: live telemetry driving readouts, bargraphs and status pills inside an elbow frame, cycling through the TNG, DS9, Nemesis and high-contrast era palettes](docs/workbench.gif)
+
+The workbench above is `index.html` in this repository, recorded live.
+Run it yourself with `make dev`.
+
 ## Features
 
 - **Web Components**: Built on pure Lit Web Components (`Custom Elements v1` + `Shadow DOM`).
