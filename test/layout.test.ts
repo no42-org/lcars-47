@@ -21,6 +21,9 @@
  *     off-screen (#19); that viewport lands with the fix, not with this harness.
  *   - Scrollbar gutter behaviour is invisible on macOS overlay scrollbars, so it
  *     is not measured on any platform.
+ *   - Embedding is only checked above the narrow breakpoint. Below it the frame
+ *     switches to document flow on viewport width alone and an embedded frame
+ *     outgrows its container (#25).
  *   - Nothing here looks at appearance. A green run is not a visual review.
  */
 

@@ -154,6 +154,8 @@ The frame is a **viewport shell**: it is exactly `--lcars-frame-height` tall (`1
 | header and footer bars | fixed chrome, never scroll |
 | the page itself | does not scroll — the frame already fills the viewport |
 
+That last row assumes the host page zeroes its body margin. A default document adds 8px around a `100dvh` frame, which is enough to make the page scroll on top of the frame's own scrolling regions.
+
 To put a frame inside a container instead of the viewport, give it a height and set the property:
 
 ```html
@@ -161,6 +163,8 @@ To put a frame inside a container instead of the viewport, give it a height and 
   <lcars-frame style="--lcars-frame-height: 100%"> … </lcars-frame>
 </div>
 ```
+
+Embedding is sized for viewports **above 600px wide**. Below that the frame switches to document flow (see below) on the strength of the *viewport* width, without regard to the size of the box it was given, and an embedded frame will grow past its container. Track that at [#25](https://github.com/no42-org/lcars-47/issues/25).
 
 **Below 600px this reverses.** The frame becomes an ordinary block that flows with the document: regions grow to their natural height and *the page* scrolls, because a phone whose stacked sidebar is taller than half the viewport has no room left for a pinned shell. A host page that sets `overflow: hidden` on `body` must relax it at that width or the footer is clipped away.
 

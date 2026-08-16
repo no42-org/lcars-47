@@ -38,11 +38,18 @@
          footer is simply clipped away. Must follow the rules it overrides. */
       @media (max-width: 600px) {
         html,
-        body,
+        body {
+          height: auto;
+          min-height: 100dvh;
+          /* Only the vertical axis opens up. Letting both go visible turns
+             any content wider than the phone into a sideways page scroll,
+             which the shell's overflow: hidden used to mask. */
+          overflow-x: hidden;
+          overflow-y: auto;
+        }
+
         .app-container {
           height: auto;
-          min-height: 100vh;
-          overflow: visible;
         }
       }
 

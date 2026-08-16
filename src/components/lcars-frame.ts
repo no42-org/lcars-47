@@ -30,7 +30,10 @@ export class LcarsFrame extends LcarsElement {
         'footer  footer';
       gap: var(--lcars-gap-sm, 4px);
       width: 100%;
-      height: 100vh;
+      /* No vh fallback: once this substitutes a value the browser cannot parse,
+         the declaration is invalid at computed-value time and the property is
+         unset, not rolled back to an earlier declaration. A guard here could
+         never fire, so the token's default carries the requirement instead. */
       height: var(--lcars-frame-height, 100dvh);
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);
@@ -126,7 +129,6 @@ export class LcarsFrame extends LcarsElement {
           'sidebar'
           'footer';
         height: auto;
-        min-height: 100vh;
         min-height: var(--lcars-frame-height, 100dvh);
       }
 
