@@ -19,10 +19,9 @@
  * Known gaps, deliberately not asserted here:
  *   - The footer row is only checked at 1440x900. At 1280x720 it is currently
  *     off-screen (#19); that viewport lands with the fix, not with this harness.
- *   - Scrollbar gutter behaviour is invisible on macOS overlay scrollbars, so it
- *     is not measured on any platform.
- *   - A frame that is itself narrower than 600px and embedded still flows past
- *     its container (#29). Frames narrow *or* embedded are both covered.
+ *   - Anything to do with scrollbars. Gutters and their effect on the container
+ *     query width are invisible on macOS overlay scrollbars, so those choices
+ *     are policy on every platform and asserted by nothing here.
  *   - Nothing here looks at appearance. A green run is not a visual review.
  */
 
@@ -475,6 +474,144 @@ describe('frame height contract', () => {
       });
       expect(r.grid).toBeCloseTo(400, 0);
       expect(r.host).toBeCloseTo(r.grid, 0);
+    } finally {
+      await p.close();
+    }
+  });
+
+  /**
+   * Containment, asserted by hit-testing rather than by arithmetic.
+   *
+   * A scrolled element reports content rectangles far outside its own box while
+   * being correctly clipped, so `getBoundingClientRect` cannot tell a contained
+   * component from an escaping one. `elementFromPoint` can, and it states the
+   * invariant literally: nothing of this component is painted outside its box.
+   * Shadow content reports the host, so one probe covers everything inside.
+   */
+  async function paintsBelowItsBox(
+    selector: string,
+    build: string
+  ): Promise<{ escapes: boolean; found: string }> {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      return await p.evaluate(
+        ({ selector, build }) => {
+          const box = document.createElement('div');
+          box.style.cssText = 'position: absolute; top: 40px; left: 40px;';
+          document.body.prepend(box);
+          // eslint-disable-next-line no-new-func
+          new Function('box', build)(box);
+
+          const component = document.querySelector(selector)!;
+          const r = box.getBoundingClientRect();
+          // Sample every edge, not just one point below the middle. Content can
+          // leave sideways as easily as downwards.
+          const probes: Array<[string, number, number]> = [
+            ['below left', r.left + 8, r.bottom + 10],
+            ['below centre', r.left + r.width / 2, r.bottom + 10],
+            ['below right', r.right - 8, r.bottom + 10],
+            ['right of middle', r.right + 10, r.top + r.height / 2],
+            ['left of middle', r.left - 10, r.top + r.height / 2],
+            ['above centre', r.left + r.width / 2, r.top - 10],
+          ];
+          // Slotted content answers as itself, not as the host, so ask whether
+          // whatever is painted there belongs to the component.
+          for (const [where, x, y] of probes) {
+            const el = document.elementFromPoint(x, y);
+            if (el && (el === component || component.contains(el))) {
+              return { escapes: true, found: `${el.tagName.toLowerCase()} ${where}` };
+            }
+          }
+          return { escapes: false, found: 'none' };
+        },
+        { selector, build }
+      );
+    } finally {
+      await p.close();
+    }
+  }
+
+  it('paints nothing outside a container too small for it', async () => {
+    const r = await paintsBelowItsBox(
+      'lcars-frame',
+      `box.style.width = '360px';
+       box.style.height = '420px';
+       const frame = document.querySelector('lcars-frame');
+       box.appendChild(frame);
+       document.querySelector('.app-container')?.remove();
+       frame.style.height = '100%';
+       frame.style.setProperty('--lcars-frame-height', '100%');`
+    );
+    expect(r.escapes, `frame painted ${r.found} below its container`).toBe(false);
+  });
+
+  it('paints nothing outside a panel given a height smaller than its content', async () => {
+    const r = await paintsBelowItsBox(
+      'lcars-panel',
+      `box.style.width = '400px';
+       box.style.height = '120px';
+       const panel = document.querySelector('lcars-panel');
+       box.appendChild(panel);
+       document.querySelector('.app-container')?.remove();
+       panel.style.height = '120px';`
+    );
+    expect(r.escapes, `panel painted ${r.found} below its container`).toBe(false);
+  });
+
+  it('lets a panel grow inside the region that scrolls it', async () => {
+    // The clamp must not reach panels placed in a frame region. Those sit in a
+    // flex container with a definite height, so a clamp on the panel host
+    // resolves there and cuts the panel down to the region, giving it an inner
+    // scroller and stopping the region from scrolling it.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const frame = document.querySelector('lcars-frame')!;
+        const panel = document.createElement('lcars-panel') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        panel.setAttribute('slot', 'main');
+        frame.appendChild(panel);
+        await panel.updateComplete;
+        const block = document.createElement('div');
+        block.style.cssText = 'height: 2000px;';
+        panel.appendChild(block);
+
+        const main = frame.shadowRoot!.querySelector('.slot-main')!;
+        const body = panel.shadowRoot!.querySelector('.panel-body')!;
+        return {
+          mainHeight: Math.round(main.getBoundingClientRect().height),
+          panelHeight: Math.round(panel.getBoundingClientRect().height),
+          panelBodyScrolls: body.scrollHeight > body.clientHeight,
+          mainScrolls: main.scrollHeight > main.clientHeight,
+        };
+      });
+      expect(r.panelHeight).toBeGreaterThan(r.mainHeight);
+      expect(r.panelBodyScrolls).toBe(false);
+      expect(r.mainScrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('leaves an unbounded parent alone', async () => {
+    // The clamp must be inert wherever the parent's height is indefinite, which
+    // is every ordinary page, or it would cap the viewport shell too.
+    const p = await openWorkbench(NARROW_VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        const block = document.createElement('div');
+        block.setAttribute('slot', 'main');
+        block.style.cssText = 'height: 2000px;';
+        frame.appendChild(block);
+        return {
+          frameHeight: Math.round(frame.getBoundingClientRect().height),
+          pageScrolls: document.documentElement.scrollHeight > window.innerHeight,
+        };
+      });
+      expect(r.frameHeight).toBeGreaterThan(NARROW_VIEWPORT.height);
+      expect(r.pageScrolls).toBe(true);
     } finally {
       await p.close();
     }
