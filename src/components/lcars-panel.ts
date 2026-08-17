@@ -15,6 +15,11 @@ export class LcarsPanel extends LcarsElement {
     :host {
       display: block;
       box-sizing: border-box;
+      /* Never paint outside the box we were given. Inert until a parent
+         bounds us, which is why every panel in the workbench is unaffected.
+         See the same pair on lcars-frame, and the hit-test that guards both. */
+      max-height: 100%;
+      overflow: auto;
     }
 
     .panel-container {
@@ -24,6 +29,10 @@ export class LcarsPanel extends LcarsElement {
       border-radius: var(--lcars-radius-sm, 6px);
       overflow: hidden;
       box-sizing: border-box;
+      /* Fit the host rather than outgrowing it. Without this a panel given a
+         height renders a container taller than itself, which painted over
+         whatever came next. */
+      max-height: 100%;
     }
 
     .panel-container.bordered {
@@ -69,6 +78,11 @@ export class LcarsPanel extends LcarsElement {
       color: var(--lcars-color-text, #ff9900);
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
       box-sizing: border-box;
+      /* A clamped panel has to put its content somewhere. Without this the
+         container's overflow: hidden simply cuts it off, trading painting
+         over the neighbours for hiding the panel's own content. */
+      overflow: auto;
+      min-height: 0;
     }
   `;
 

@@ -34,6 +34,25 @@ export class LcarsFrame extends LcarsElement {
       /* No height here on purpose. The grid owns it, so the host wraps the
          grid exactly and cannot paint a band of frame-coloured dead space
          under it when the two disagree. */
+
+      /* Never paint outside the box we were given. A percentage max-height
+         resolves to none against a parent whose height is indefinite and
+         clamps against one that is definite, which is exactly the difference
+         between being the page and being a card, with nothing for the
+         consumer to declare. The overflow is the other half: clamping alone
+         leaves the box the right size and the content still painting past it.
+
+         This looks like dead code, because it does nothing until a parent is
+         bounded and no ordinary page is. test/layout.test.ts hit-tests just
+         outside the box to keep it honest. */
+      max-height: 100%;
+      overflow: auto;
+      /* Container queries measure the content box, so a scrollbar appearing
+         changes the width the query sees and can decide the layout by itself.
+         Reserving the space removes that band around the threshold. Invisible
+         on overlay scrollbars, so the gate cannot check this one. */
+      scrollbar-gutter: stable;
+
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);

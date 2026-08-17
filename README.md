@@ -188,7 +188,9 @@ The frame is always exactly as tall as `--lcars-frame-height`, so it never paint
 
 An embedded frame keeps its box whatever the window is doing, because the layout answers to the frame's own width rather than the viewport's — a 640px console stays a pinned shell on a phone, and a 360px one stacks on a desktop.
 
-One case is still open: a frame that is *itself* narrower than 600px **and** embedded flows to its content height and grows past its container, because flowing is right for a phone-sized shell and wrong for a phone-sized card, and the frame cannot tell which it is. Track that at [#29](https://github.com/no42-org/lcars-47/issues/29).
+**A component never paints outside the box you give it.** Where a parent bounds it and its content wants more room, it clamps to that parent and scrolls rather than overflowing onto whatever you put next to it. This applies to `<lcars-panel>` too, and it is inert wherever the parent's height is indefinite, which is every ordinary page.
+
+One limit comes with it. A clamped frame scrolls on its own outer box, and that box cannot carry a focus stop the way `main` and `sidebar` do. Focusable content stays reachable, because focus scrolls the frame to follow it. Inert content inside `main`, below the first screen of a frame that is both clamped and stacked, is not reachable by keyboard.
 
 **A frame narrower than 600px reverses this.** It becomes an ordinary block that flows with the document: the regions stack (header, sidebar, main, footer), grow to their natural height, and *the page* scrolls, because a console that narrow has no room left for a pinned shell. The threshold is the frame's own width, not the window's. A host page that sets `overflow: hidden` on `body` must relax it, or the footer is clipped away.
 
