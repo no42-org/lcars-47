@@ -63,7 +63,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.top-left .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-top-left-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -106,7 +106,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.bottom-left .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-bottom-left-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -149,7 +149,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.top-right .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-top-right-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -193,7 +193,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.bottom-right .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-bottom-right-radius: var(--lcars-radius-elbow, 28px);
       display: flex;

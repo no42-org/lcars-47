@@ -201,6 +201,10 @@ Curved LCARS corner bracket rendered with CSS radii and a concave inner fillet.
 - **Properties**: `orientation` (`'top-left' | 'bottom-left' | 'top-right' | 'bottom-right'`), `heading`, `label`, `color`.
 - **Slots**: `label`, plus the default slot (both fall back to the matching property).
 
+The arch is as wide as `--lcars-elbow-width`, which is unset by default and falls back to `--lcars-sidebar-width`. Inside a frame that is what keeps the arch lined up with the column beneath it, so widen the sidebar and the arch follows. Set `--lcars-elbow-width` for an elbow used on its own, where there is no sidebar to line up with, or accept that the two stop matching.
+
+An elbow's heading is as wide as its text, and the bar beside it takes what is left. A long heading is free to squeeze that bar until its text wraps: the bar grows to hold it rather than rendering text outside itself.
+
 ### `<lcars-button>`
 Tactile button with procedural audio feedback and keyboard interaction.
 - **Properties**: `color`, `shape` (`'pill' | 'pill-start' | 'pill-end' | 'rect' | 'bracket'`), `sound` (`'chirp' | 'acknowledge' | 'warning' | 'alert' | 'input' | 'deny' | 'beep' | 'warp' | 'silent' | 'none'`; `silent` and `none` suppress playback), `disabled`, `active`.

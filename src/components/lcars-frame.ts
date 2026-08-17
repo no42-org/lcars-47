@@ -118,7 +118,11 @@ export class LcarsFrame extends LcarsElement {
       display: flex;
       flex: 1;
       min-width: 0;
-      height: var(--lcars-bar-height, 28px);
+      /* A minimum, not a height. How much room this band gets depends on how
+         long the neighbouring elbow's heading is, which is an unrelated
+         authoring decision, so a fixed height renders bar text outside the
+         bar as soon as it wraps. */
+      min-height: var(--lcars-bar-height, 28px);
       align-items: center;
       gap: var(--lcars-gap-sm, 4px);
     }
@@ -207,13 +211,12 @@ export class LcarsFrame extends LcarsElement {
         flex-wrap: wrap;
       }
 
-      /* Too little width to sit beside the elbow: drop onto an own line and let
-         the bar text wrap instead of spilling out of the band. */
+      /* Too little width to sit beside the elbow: drop onto an own line. The
+         band already grows with its content at every width, so there is no
+         height to undo here. */
       .slot-top-bar,
       .slot-footer {
         flex-basis: 100%;
-        height: auto;
-        min-height: var(--lcars-bar-height, 28px);
       }
     }
   `;
