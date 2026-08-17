@@ -81,16 +81,18 @@ jobs:
       # This renders it as a self-contained HTML report. Both must exist before
       # checksums are computed, or they ship unverifiable.
       #
-      # image is pinned to a digest deliberately: the action's own resolution
-      # falls back to the mutable report-rc tag, and this job signs what it
-      # produces, so it must not pull a moving image. Dependabot bumps the
-      # action pin but not this digest; update it when bumping the action.
+      # image is pinned to the digest of the report image matching the action
+      # version: the action would resolve the report-0.7.1 tag itself, but a
+      # tag can be repointed, and this job signs what it produces, so it must
+      # not pull a moving image. Dependabot bumps the action pin but not this
+      # digest; update both together, and keep the trailing tag comment in
+      # sync so a reviewer can cross-reference it.
       - name: Render SBOM report
         uses: no42-org/blitsbom@b3cb2b1bdd5664193478acf04812251fdc8eb124 # v0.7.1
         with:
           sbom: release/sbom.cdx.json
           output: release/sbom-report.html
-          image: ghcr.io/no42-org/blitsbom@sha256:72ac31712ac30279ed4b297fbf6453182288862c678e8c77c83e70fb2ffb30b5
+          image: ghcr.io/no42-org/blitsbom@sha256:d7bb1cb75dc5444ea0e977b66a7860e9dc0a710812b2302bddd1d63a2af0d632 # report-0.7.1
 
       - name: Checksums and signature
         run: |
