@@ -12,10 +12,35 @@ import { LcarsElement } from './base';
  */
 export class LcarsFrame extends LcarsElement {
   static override styles = css`
-    /* The host is the grid. Two boxes each declaring a height is what let the
-       footer row drift off screen: the inner one tracked the outer through
-       hand-maintained arithmetic, and the seam between them was the bug. */
+    /* The host is a size container, so every responsive rule below asks how
+       wide the frame is rather than how wide the window is. A frame keyed to
+       the viewport is wrong in both directions: an 800px frame on a 420px
+       screen stacked and burst out of its box, and a 400px frame on a 1280px
+       screen kept a 160px sidebar beside a 220px main.
+
+       A container query can never style its own container, so the grid sits
+       inside the host rather than on it. Only the grid declares a height —
+       the host has none of its own to disagree with, which is what made the
+       previous two-box arrangement drift the footer off screen (#19). */
     :host {
+      display: block;
+      container-type: inline-size;
+      /* Inline-size containment computes this box's width as if it had no
+         contents, so anywhere the frame is shrink-to-fit (a flex item, a
+         float, inline-block, absolutely positioned) that intrinsic width is
+         zero and the console silently disappears. An explicit width gives
+         every one of those cases something real to resolve against. */
+      width: 100%;
+      /* No height here on purpose. The grid owns it, so the host wraps the
+         grid exactly and cannot paint a band of frame-coloured dead space
+         under it when the two disagree. */
+      background-color: var(--lcars-color-bg, #000000);
+      color: var(--lcars-color-text, #ff9900);
+      font-family: var(--lcars-font-family, 'Antonio', sans-serif);
+      box-sizing: border-box;
+    }
+
+    .frame-grid {
       display: grid;
       grid-template-columns: var(--lcars-sidebar-width, 160px) 1fr;
       /* The definite height and this minmax are a pair. The height stops 1fr
@@ -36,11 +61,10 @@ export class LcarsFrame extends LcarsElement {
          unset, not rolled back to an earlier declaration. A guard here could
          never fire, so the token's default carries the requirement instead. */
       height: var(--lcars-frame-height, 100dvh);
-      background-color: var(--lcars-color-bg, #000000);
-      color: var(--lcars-color-text, #ff9900);
-      font-family: var(--lcars-font-family, 'Antonio', sans-serif);
-      box-sizing: border-box;
+      /* Padding belongs to the box that owns the height, so the token means the
+         frame's outer height rather than its height plus two gaps. */
       padding: var(--lcars-gap-md, 8px);
+      box-sizing: border-box;
     }
 
     /* The elbow and the bar next to it share one row: the elbow is as wide as
@@ -125,19 +149,23 @@ export class LcarsFrame extends LcarsElement {
       outline-offset: calc(-1 * var(--lcars-border-width, 3px));
     }
 
-    /* Responsive adjustments for narrow screens */
-    @media (max-width: 600px) {
+    /* Narrow frames, whatever the window is doing */
+    @container (max-width: 600px) {
       /* Deliberate change of identity, not just a reflow: too narrow to be a
-         cockpit, so the frame becomes a document block and the page scrolls.
-         Pinning the shell here starves main — a stacked sidebar taller than
-         half the viewport leaves it its padding and nothing else. */
-      :host {
+         cockpit, so the frame flows with the document. Pinning a shell at this
+         width starves main — a stacked sidebar taller than half the frame
+         leaves it its padding and nothing else.
+
+         Sidebar before main, matching the DOM order the wide layout already
+         relies on: reversing them here sent the keyboard to the lower block
+         first and back up again (#28). */
+      .frame-grid {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto auto;
         grid-template-areas:
           'header'
-          'main'
           'sidebar'
+          'main'
           'footer';
         height: auto;
         min-height: var(--lcars-frame-height, 100dvh);
@@ -184,42 +212,46 @@ export class LcarsFrame extends LcarsElement {
 
   override render(): TemplateResult {
     return html`
-      <div class="slot-header">
-        <div class="slot-elbow-tl">
-          <slot name="elbow-tl"></slot>
+      <div class="frame-grid">
+        <div class="slot-header">
+          <div class="slot-elbow-tl">
+            <slot name="elbow-tl"></slot>
+          </div>
+
+          <div class="slot-top-bar">
+            <slot name="top-bar"></slot>
+          </div>
         </div>
 
-        <div class="slot-top-bar">
-          <slot name="top-bar"></slot>
-        </div>
-      </div>
+        <!-- Both regions scroll, so both must be focusable: a keyboard-only
+             user cannot otherwise reach content that has scrolled out of view.
+             Chrome 127+ does this for scrollers without focusable descendants,
+             which a console region rarely is; Safari and Firefox not at all.
 
-      <!-- Both regions scroll, so both must be focusable: a keyboard-only user
-           cannot otherwise reach content that has scrolled out of view. Chrome
-           127+ does this for scrollers without focusable descendants, which a
-           console region rarely is; Safari and Firefox not at all.
+             Unconditional, though a narrow frame stops scrolling these regions
+             and the two tab stops buy nothing there. CSS cannot drive tabindex,
+             and a resize observer toggling it would reorder focus as the frame
+             changes size, which is worse than two inert stops.
 
-           Unconditional, though below the narrow breakpoint these regions stop
-           scrolling and the two tab stops buy nothing there. CSS cannot drive
-           tabindex, and a resize observer toggling it would reorder focus as
-           the window changes, which is worse than two inert stops. -->
-      <aside class="slot-sidebar" tabindex="0" aria-label=${this.sidebarLabel || nothing}>
-        <slot name="sidebar"></slot>
-      </aside>
+             Sidebar first, matching the visual order of both layouts. -->
+        <aside class="slot-sidebar" tabindex="0" aria-label=${this.sidebarLabel || nothing}>
+          <slot name="sidebar"></slot>
+        </aside>
 
-      <main class="slot-main" tabindex="0" aria-label=${this.mainLabel || nothing}>
-        <slot></slot>
-        <slot name="main"></slot>
-      </main>
+        <main class="slot-main" tabindex="0" aria-label=${this.mainLabel || nothing}>
+          <slot></slot>
+          <slot name="main"></slot>
+        </main>
 
-      <div class="slot-footer-row">
-        <div class="slot-elbow-bl">
-          <slot name="elbow-bl"></slot>
-        </div>
+        <div class="slot-footer-row">
+          <div class="slot-elbow-bl">
+            <slot name="elbow-bl"></slot>
+          </div>
 
-        <div class="slot-footer">
-          <slot name="footer-readout"></slot>
-          <slot name="footer"></slot>
+          <div class="slot-footer">
+            <slot name="footer-readout"></slot>
+            <slot name="footer"></slot>
+          </div>
         </div>
       </div>
     `;

@@ -21,9 +21,8 @@
  *     off-screen (#19); that viewport lands with the fix, not with this harness.
  *   - Scrollbar gutter behaviour is invisible on macOS overlay scrollbars, so it
  *     is not measured on any platform.
- *   - Embedding is only checked above the narrow breakpoint. Below it the frame
- *     switches to document flow on viewport width alone and an embedded frame
- *     outgrows its container (#25).
+ *   - A frame that is itself narrower than 600px and embedded still flows past
+ *     its container (#29). Frames narrow *or* embedded are both covered.
  *   - Nothing here looks at appearance. A green run is not a visual review.
  */
 
@@ -249,6 +248,7 @@ describe('frame height contract', () => {
         cell.style.cssText = 'width: 800px; height: 400px;';
         document.body.appendChild(cell);
         cell.appendChild(frame);
+        (frame as HTMLElement).style.height = '100%';
         (frame as HTMLElement).style.setProperty('--lcars-frame-height', '100%');
 
         const root = frame.shadowRoot!;
@@ -347,6 +347,137 @@ describe('frame height contract', () => {
     });
     expect(r.focused).toBe(true);
     expect(r.after).toBeGreaterThan(r.before);
+  });
+
+  /**
+   * The frame is a size container, so its layout answers to its own width.
+   * Both of these fail when the breakpoint is keyed to the viewport, and they
+   * fail in opposite directions.
+   */
+  async function embed(
+    viewport: typeof VIEWPORT,
+    cell: { width: number; height: number }
+  ): Promise<{
+    frameWidth: number;
+    stacked: boolean;
+    sidebarAboveMain: boolean;
+    overshoot: number;
+  }> {
+    const p = await openWorkbench(viewport);
+    try {
+      return await p.evaluate((cell) => {
+        const frame = document.querySelector('lcars-frame')!;
+        const box = document.createElement('div');
+        box.style.cssText = `width: ${cell.width}px; height: ${cell.height}px;`;
+        document.body.prepend(box);
+        box.appendChild(frame);
+        document.querySelector('.app-container')?.remove();
+        // Filling a container takes both halves: the element is told to fill
+        // its parent, and the frame is told to use that height. The token
+        // alone is a percentage with nothing definite to resolve against.
+        (frame as HTMLElement).style.height = '100%';
+        (frame as HTMLElement).style.setProperty('--lcars-frame-height', '100%');
+
+        const root = frame.shadowRoot!;
+        const side = root.querySelector('.slot-sidebar')!.getBoundingClientRect();
+        const main = root.querySelector('.slot-main')!.getBoundingClientRect();
+        const footer = root.querySelector('.slot-footer-row')!.getBoundingClientRect();
+        return {
+          frameWidth: Math.round(frame.getBoundingClientRect().width),
+          stacked: side.bottom <= main.top + 1,
+          sidebarAboveMain: side.top < main.top,
+          overshoot: footer.bottom - box.getBoundingClientRect().bottom,
+        };
+      }, cell);
+    } finally {
+      await p.close();
+    }
+  }
+
+  it('keeps a roomy frame pinned inside its box on a narrow screen', async () => {
+    // Keyed to the viewport this stacked and burst out of the container.
+    const r = await embed(NARROW_VIEWPORT, { width: 800, height: 400 });
+    expect(r.frameWidth).toBe(800);
+    expect(r.stacked).toBe(false);
+    expect(r.overshoot).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
+
+  it('stacks a narrow frame on a wide screen', async () => {
+    // Keyed to the viewport this kept a 160px sidebar beside a 220px main.
+    const r = await embed(VIEWPORT, { width: 400, height: 900 });
+    expect(r.frameWidth).toBe(400);
+    expect(r.stacked).toBe(true);
+  });
+
+  it('stacks the sidebar above main, matching the order the keyboard walks', async () => {
+    // DOM order is sidebar then main, and the wide layout puts the sidebar in
+    // the left column. Reversing that when stacked sent Tab to the lower block
+    // first and then back up (#28).
+    const r = await embed(VIEWPORT, { width: 400, height: 900 });
+    expect(r.sidebarAboveMain).toBe(true);
+  });
+
+  it('survives being placed somewhere shrink-to-fit', async () => {
+    // Inline-size containment computes the host's width as if it had no
+    // contents, so without an explicit width the frame collapses to nothing in
+    // every one of these and renders invisible, with no error anywhere.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const widths = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        document.querySelector('.app-container')?.remove();
+        const parents: Record<string, string> = {
+          'flex item': 'display: flex; width: 1000px;',
+          'inline-block': 'display: inline-block; width: 1000px;',
+          float: 'width: 1000px;',
+          absolute: 'position: relative; width: 1000px; height: 600px;',
+        };
+        const out: Record<string, number> = {};
+        for (const [name, css] of Object.entries(parents)) {
+          const parent = document.createElement('div');
+          parent.style.cssText = css;
+          document.body.append(parent);
+          parent.appendChild(frame);
+          if (name === 'float') (frame as HTMLElement).style.cssText = 'float: left';
+          else if (name === 'absolute') (frame as HTMLElement).style.cssText = 'position: absolute';
+          else (frame as HTMLElement).style.cssText = '';
+          out[name] = Math.round(frame.getBoundingClientRect().width);
+        }
+        return out;
+      });
+      for (const [context, width] of Object.entries(widths)) {
+        expect(width, `frame collapsed as a ${context}`).toBeGreaterThan(100);
+      }
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('is exactly as tall as it says, whatever its parent is', async () => {
+    // The host must not carry a height of its own. When it does, a parent
+    // taller than the token leaves a band of frame-coloured dead space below
+    // the console and pushes the next sibling down.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        const parent = document.createElement('div');
+        parent.style.cssText = 'width: 800px; height: 800px;';
+        document.body.prepend(parent);
+        parent.appendChild(frame);
+        document.querySelector('.app-container')?.remove();
+        (frame as HTMLElement).style.setProperty('--lcars-frame-height', '400px');
+        const grid = frame.shadowRoot!.querySelector('.frame-grid')!;
+        return {
+          host: frame.getBoundingClientRect().height,
+          grid: grid.getBoundingClientRect().height,
+        };
+      });
+      expect(r.grid).toBeCloseTo(400, 0);
+      expect(r.host).toBeCloseTo(r.grid, 0);
+    } finally {
+      await p.close();
+    }
   });
 
   it('lets main keep its natural height below the narrow breakpoint', async () => {
