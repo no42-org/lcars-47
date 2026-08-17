@@ -333,13 +333,18 @@ describe('LCARS Geometric Framework Components', () => {
       await frame.updateComplete;
 
       expect(frame.getAttribute('data-lcars-theme')).toBe('ds9');
-      // The host itself is the grid: a wrapper would mean two boxes owning the
-      // frame's height, which is what pushed the footer row off screen (#19).
-      // Asserted structurally, so any re-introduced wrapper fails this whatever
-      // it is called.
-      const main = frame.shadowRoot?.querySelector('.slot-main');
-      expect(main).not.toBeNull();
-      expect(main?.parentNode).toBe(frame.shadowRoot);
+      // The host is a size container and the grid sits inside it, because a
+      // container query cannot style its own container. Exactly one of the two
+      // declares a height: two boxes owning it is what drifted the footer row
+      // off screen (#19).
+      const grid = frame.shadowRoot?.querySelector('.frame-grid');
+      expect(grid?.parentNode).toBe(frame.shadowRoot);
+      expect(frame.shadowRoot?.querySelector('.slot-main')?.parentNode).toBe(grid);
+
+      const styles = (frame.constructor as typeof LcarsFrame).styles?.toString() ?? '';
+      const hostBlock = styles.match(/:host\s*\{[^}]*\}/)?.[0] ?? '';
+      expect(hostBlock).toContain('container-type: inline-size');
+      expect(hostBlock).not.toMatch(/height:\s*var\(--lcars-frame-height/);
     });
 
     it('makes both scrollable regions focusable, and names them only on request', async () => {

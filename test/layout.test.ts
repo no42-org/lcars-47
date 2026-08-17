@@ -21,9 +21,8 @@
  *     off-screen (#19); that viewport lands with the fix, not with this harness.
  *   - Scrollbar gutter behaviour is invisible on macOS overlay scrollbars, so it
  *     is not measured on any platform.
- *   - Embedding is only checked above the narrow breakpoint. Below it the frame
- *     switches to document flow on viewport width alone and an embedded frame
- *     outgrows its container (#25).
+ *   - A frame that is itself narrower than 600px and embedded still flows past
+ *     its container (#29). Frames narrow *or* embedded are both covered.
  *   - Nothing here looks at appearance. A green run is not a visual review.
  */
 
@@ -347,6 +346,70 @@ describe('frame height contract', () => {
     });
     expect(r.focused).toBe(true);
     expect(r.after).toBeGreaterThan(r.before);
+  });
+
+  /**
+   * The frame is a size container, so its layout answers to its own width.
+   * Both of these fail when the breakpoint is keyed to the viewport, and they
+   * fail in opposite directions.
+   */
+  async function embed(
+    viewport: typeof VIEWPORT,
+    cell: { width: number; height: number }
+  ): Promise<{
+    frameWidth: number;
+    stacked: boolean;
+    sidebarAboveMain: boolean;
+    overshoot: number;
+  }> {
+    const p = await openWorkbench(viewport);
+    try {
+      return await p.evaluate((cell) => {
+        const frame = document.querySelector('lcars-frame')!;
+        const box = document.createElement('div');
+        box.style.cssText = `width: ${cell.width}px; height: ${cell.height}px;`;
+        document.body.prepend(box);
+        box.appendChild(frame);
+        document.querySelector('.app-container')?.remove();
+        (frame as HTMLElement).style.setProperty('--lcars-frame-height', '100%');
+
+        const root = frame.shadowRoot!;
+        const side = root.querySelector('.slot-sidebar')!.getBoundingClientRect();
+        const main = root.querySelector('.slot-main')!.getBoundingClientRect();
+        const footer = root.querySelector('.slot-footer-row')!.getBoundingClientRect();
+        return {
+          frameWidth: Math.round(frame.getBoundingClientRect().width),
+          stacked: side.bottom <= main.top + 1,
+          sidebarAboveMain: side.top < main.top,
+          overshoot: footer.bottom - box.getBoundingClientRect().bottom,
+        };
+      }, cell);
+    } finally {
+      await p.close();
+    }
+  }
+
+  it('keeps a roomy frame pinned inside its box on a narrow screen', async () => {
+    // Keyed to the viewport this stacked and burst out of the container.
+    const r = await embed(NARROW_VIEWPORT, { width: 800, height: 400 });
+    expect(r.frameWidth).toBe(800);
+    expect(r.stacked).toBe(false);
+    expect(r.overshoot).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
+
+  it('stacks a narrow frame on a wide screen', async () => {
+    // Keyed to the viewport this kept a 160px sidebar beside a 220px main.
+    const r = await embed(VIEWPORT, { width: 400, height: 900 });
+    expect(r.frameWidth).toBe(400);
+    expect(r.stacked).toBe(true);
+  });
+
+  it('stacks the sidebar above main, matching the order the keyboard walks', async () => {
+    // DOM order is sidebar then main, and the wide layout puts the sidebar in
+    // the left column. Reversing that when stacked sent Tab to the lower block
+    // first and then back up (#28).
+    const r = await embed(VIEWPORT, { width: 400, height: 900 });
+    expect(r.sidebarAboveMain).toBe(true);
   });
 
   it('lets main keep its natural height below the narrow breakpoint', async () => {

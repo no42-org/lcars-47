@@ -176,9 +176,11 @@ To put a frame inside a container instead of the viewport, give it a height and 
 </div>
 ```
 
-Embedding is sized for viewports **above 600px wide**. Below that the frame switches to document flow (see below) on the strength of the *viewport* width, without regard to the size of the box it was given, and an embedded frame will grow past its container. Track that at [#25](https://github.com/no42-org/lcars-47/issues/25).
+An embedded frame keeps its box whatever the window is doing, because the layout answers to the frame's own width rather than the viewport's — a 640px console stays a pinned shell on a phone, and a 360px one stacks on a desktop.
 
-**Below 600px this reverses.** The frame becomes an ordinary block that flows with the document: regions grow to their natural height and *the page* scrolls, because a phone whose stacked sidebar is taller than half the viewport has no room left for a pinned shell. A host page that sets `overflow: hidden` on `body` must relax it at that width or the footer is clipped away.
+One case is still open: a frame that is *itself* narrower than 600px **and** embedded flows to its content height and grows past its container, because flowing is right for a phone-sized shell and wrong for a phone-sized card, and the frame cannot tell which it is. Track that at [#29](https://github.com/no42-org/lcars-47/issues/29).
+
+**A frame narrower than 600px reverses this.** It becomes an ordinary block that flows with the document: the regions stack (header, sidebar, main, footer), grow to their natural height, and *the page* scrolls, because a console that narrow has no room left for a pinned shell. The threshold is the frame's own width, not the window's. A host page that sets `overflow: hidden` on `body` must relax it, or the footer is clipped away.
 
 ### `<lcars-elbow>`
 Curved LCARS corner bracket rendered with CSS radii and a concave inner fillet.

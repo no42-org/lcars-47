@@ -15,42 +15,27 @@
         margin: 0;
         padding: 0;
         width: 100%;
-        height: 100vh;
+        min-height: 100vh;
         background-color: var(--lcars-color-bg, #000000);
         color: var(--lcars-color-text, #ff9900);
         font-family: 'Antonio', sans-serif;
-        overflow: hidden;
+        /* The frame decides for itself when to stop being a pinned shell and
+           flow, so the page stays scrollable rather than duplicating that
+           threshold here and clipping the footer when the two disagree. Only
+           the vertical axis: wide content should not scroll the page sideways. */
+        overflow-x: hidden;
+        overflow-y: auto;
         box-sizing: border-box;
       }
 
       .app-container {
         width: 100%;
-        height: 100vh;
+        min-height: 100vh;
         padding: 12px;
         box-sizing: border-box;
         /* The frame defaults to a full 100dvh, which overflows this padded
            container and clips the footer row. */
         --lcars-frame-height: calc(100dvh - 24px);
-      }
-
-      /* Below the breakpoint the frame stops being a pinned shell and flows
-         with the document, so the page has to be allowed to scroll or the
-         footer is simply clipped away. Must follow the rules it overrides. */
-      @media (max-width: 600px) {
-        html,
-        body {
-          height: auto;
-          min-height: 100dvh;
-          /* Only the vertical axis opens up. Letting both go visible turns
-             any content wider than the phone into a sideways page scroll,
-             which the shell's overflow: hidden used to mask. */
-          overflow-x: hidden;
-          overflow-y: auto;
-        }
-
-        .app-container {
-          height: auto;
-        }
       }
 
       .top-header {
