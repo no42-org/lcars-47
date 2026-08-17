@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { html, css, type TemplateResult } from 'lit';
+import { html, css, nothing, type TemplateResult } from 'lit';
+import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 
 /**
@@ -114,6 +115,16 @@ export class LcarsFrame extends LcarsElement {
       scrollbar-gutter: stable;
     }
 
+    /* Keyboard focus only. These regions are focusable so they can be scrolled
+       without a pointer, which would otherwise put a ring around half the
+       console every time someone clicks in it. Drawn inside, since a region is
+       flush against its neighbours. */
+    .slot-main:focus-visible,
+    .slot-sidebar:focus-visible {
+      outline: var(--lcars-border-width, 3px) solid var(--lcars-color-primary, #ff9900);
+      outline-offset: calc(-1 * var(--lcars-border-width, 3px));
+    }
+
     /* Responsive adjustments for narrow screens */
     @media (max-width: 600px) {
       /* Deliberate change of identity, not just a reflow: too narrow to be a
@@ -158,6 +169,19 @@ export class LcarsFrame extends LcarsElement {
     }
   `;
 
+  /**
+   * Accessible name for the scrollable main region. Optional: the region is a
+   * `main` landmark, which assistive technology already announces by role.
+   * Name it when a page carries more than one frame, or when "main" is not
+   * descriptive enough on its own.
+   */
+  @property({ type: String, attribute: 'main-label' })
+  mainLabel = '';
+
+  /** Accessible name for the scrollable sidebar region. See {@link mainLabel}. */
+  @property({ type: String, attribute: 'sidebar-label' })
+  sidebarLabel = '';
+
   override render(): TemplateResult {
     return html`
       <div class="slot-header">
@@ -170,11 +194,20 @@ export class LcarsFrame extends LcarsElement {
         </div>
       </div>
 
-      <aside class="slot-sidebar">
+      <!-- Both regions scroll, so both must be focusable: a keyboard-only user
+           cannot otherwise reach content that has scrolled out of view. Chrome
+           127+ does this for scrollers without focusable descendants, which a
+           console region rarely is; Safari and Firefox not at all.
+
+           Unconditional, though below the narrow breakpoint these regions stop
+           scrolling and the two tab stops buy nothing there. CSS cannot drive
+           tabindex, and a resize observer toggling it would reorder focus as
+           the window changes, which is worse than two inert stops. -->
+      <aside class="slot-sidebar" tabindex="0" aria-label=${this.sidebarLabel || nothing}>
         <slot name="sidebar"></slot>
       </aside>
 
-      <main class="slot-main">
+      <main class="slot-main" tabindex="0" aria-label=${this.mainLabel || nothing}>
         <slot></slot>
         <slot name="main"></slot>
       </main>

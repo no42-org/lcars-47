@@ -303,6 +303,52 @@ describe('frame height contract', () => {
     }
   });
 
+  it('lets a keyboard reach and scroll the regions it made scrollable', async () => {
+    // Tab traversal, not `element.focus()`: programmatic focus succeeds on a
+    // scroll container in Chromium whether or not it carries `tabindex`, so a
+    // `.focus()`-based check would pass against a region no keyboard user can
+    // reach. Chromium's focusable-scroller behaviour skips any scroller that
+    // already contains focusable descendants, which both of these do.
+    const MAX_TAB_PRESSES = 40;
+    const r = await withTallMain(SHORT_VIEWPORT, async (p) => {
+      const scrollTop = () =>
+        p.evaluate(
+          () =>
+            document.querySelector('lcars-frame')!.shadowRoot!.querySelector('.slot-main')!.scrollTop
+        );
+
+      const onMain = () =>
+        p.evaluate(() => {
+          const root = document.querySelector('lcars-frame')!.shadowRoot!;
+          return root.activeElement === root.querySelector('.slot-main');
+        });
+
+      await p.evaluate(() => document.body.focus());
+      let focused = false;
+      let presses = 0;
+      while (!focused && presses < MAX_TAB_PRESSES) {
+        await p.keyboard.press('Tab');
+        presses += 1;
+        focused = await onMain();
+      }
+
+      const before = await scrollTop();
+      // Real key press through the browser's input stack, not a synthetic
+      // event: the point is that the browser scrolls the focused region.
+      await p.keyboard.press('End');
+      await p.waitForFunction(
+        () =>
+          document.querySelector('lcars-frame')!.shadowRoot!.querySelector('.slot-main')!.scrollTop >
+          0,
+        undefined,
+        { timeout: 2_000 }
+      );
+      return { focused, before, after: await scrollTop() };
+    });
+    expect(r.focused).toBe(true);
+    expect(r.after).toBeGreaterThan(r.before);
+  });
+
   it('lets main keep its natural height below the narrow breakpoint', async () => {
     // Guard rather than reproduction: this passes today. Pinning a shell height
     // on a phone, where the stacked sidebar alone is taller than half the

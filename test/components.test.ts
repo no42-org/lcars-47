@@ -342,6 +342,46 @@ describe('LCARS Geometric Framework Components', () => {
       expect(main?.parentNode).toBe(frame.shadowRoot);
     });
 
+    it('makes both scrollable regions focusable, and names them only on request', async () => {
+      const frame = document.createElement('lcars-frame') as LcarsFrame;
+      document.body.appendChild(frame);
+      await frame.updateComplete;
+
+      const main = frame.shadowRoot?.querySelector('.slot-main');
+      const sidebar = frame.shadowRoot?.querySelector('.slot-sidebar');
+
+      // Both scroll, so a keyboard-only user has to be able to reach them.
+      expect(main?.getAttribute('tabindex')).toBe('0');
+      expect(sidebar?.getAttribute('tabindex')).toBe('0');
+
+      // No name by default: `main` and `aside` are landmarks that assistive
+      // technology announces by role, so a hardcoded English string would add
+      // nothing and would not be localisable.
+      expect(main?.hasAttribute('aria-label')).toBe(false);
+      expect(sidebar?.hasAttribute('aria-label')).toBe(false);
+
+      frame.mainLabel = 'ENGINEERING TELEMETRY';
+      frame.sidebarLabel = 'CONSOLE CONTROLS';
+      await frame.updateComplete;
+
+      expect(main?.getAttribute('aria-label')).toBe('ENGINEERING TELEMETRY');
+      expect(sidebar?.getAttribute('aria-label')).toBe('CONSOLE CONTROLS');
+    });
+
+    it('drives the region labels from markup', async () => {
+      document.body.innerHTML =
+        '<lcars-frame main-label="SENSOR SWEEP" sidebar-label="NAV CONTROLS"></lcars-frame>';
+      const frame = document.body.firstElementChild as LcarsFrame;
+      await frame.updateComplete;
+
+      expect(frame.shadowRoot?.querySelector('.slot-main')?.getAttribute('aria-label')).toBe(
+        'SENSOR SWEEP'
+      );
+      expect(frame.shadowRoot?.querySelector('.slot-sidebar')?.getAttribute('aria-label')).toBe(
+        'NAV CONTROLS'
+      );
+    });
+
     it('provides all named layout slots', async () => {
       const frame = document.createElement('lcars-frame') as LcarsFrame;
       document.body.appendChild(frame);
