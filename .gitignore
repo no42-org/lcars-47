@@ -4,6 +4,7 @@ node_modules/
 # Production build artifacts
 dist/
 release/
+site/
 
 # OS and system files
 .DS_Store

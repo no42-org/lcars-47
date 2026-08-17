@@ -21,6 +21,7 @@
     "src/**/*",
     "test/**/*",
     "vite.config.ts",
+    "vite.pages.config.ts",
     "vitest.config.ts",
     "vitest.layout.config.ts"
   ],

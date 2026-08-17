@@ -12,7 +12,7 @@ LCARS Web Component library. See README.md for usage, CONTRIBUTING.md for proces
 Everything goes through `make`; CI runs the same targets.
 
 ```bash
-make verify      # the gate: typecheck, build, test, dist and layout checks
+make verify      # the gate: typecheck, build, test, dist, layout and site checks
 make test        # unit tests only, no browser
 make test-layout # browser layout gate only
 make dev         # workbench at index.html
