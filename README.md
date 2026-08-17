@@ -184,13 +184,15 @@ To fill a container of unknown height, tell the element to fill its parent as we
 </div>
 ```
 
-The frame is always exactly as tall as `--lcars-frame-height`, so it never paints a band of dead space under itself or pushes a following sibling down.
+The frame is as tall as `--lcars-frame-height`, or as tall as its parent when the parent is smaller (see below). It never paints a band of dead space under itself or pushes a following sibling down.
 
 An embedded frame keeps its box whatever the window is doing, because the layout answers to the frame's own width rather than the viewport's — a 640px console stays a pinned shell on a phone, and a 360px one stacks on a desktop.
 
-**A component never paints outside the box you give it.** Where a parent bounds it and its content wants more room, it clamps to that parent and scrolls rather than overflowing onto whatever you put next to it. This applies to `<lcars-panel>` too, and it is inert wherever the parent's height is indefinite, which is every ordinary page.
+**A component never paints outside the box you give it.** Where a parent bounds the frame and its content wants more room, it clamps to that parent and scrolls rather than overflowing onto whatever you put next to it. This is inert wherever the parent's height is indefinite, which is every ordinary page.
 
-One limit comes with it. A clamped frame scrolls on its own outer box, and that box cannot carry a focus stop the way `main` and `sidebar` do. Focusable content stays reachable, because focus scrolls the frame to follow it. Inert content inside `main`, below the first screen of a frame that is both clamped and stacked, is not reachable by keyboard.
+`<lcars-panel>` follows the same rule, but only when you size the panel itself. A panel placed in a frame region grows to its content and the region scrolls it, which is why panels inside `main` behave as they always have.
+
+Two keyboard limits come with this. A clamped frame scrolls on its own outer box, and that box cannot carry a focus stop the way `main` and `sidebar` do. Focusable content stays reachable, because focus scrolls the frame to follow it. Inert content inside `main`, below the first screen of a frame that is both clamped and stacked, is not. A panel you give an explicit height scrolls its body, and that scroller has no focus stop either, so the same caveat applies to inert content inside it.
 
 **A frame narrower than 600px reverses this.** It becomes an ordinary block that flows with the document: the regions stack (header, sidebar, main, footer), grow to their natural height, and *the page* scrolls, because a console that narrow has no room left for a pinned shell. The threshold is the frame's own width, not the window's. A host page that sets `overflow: hidden` on `body` must relax it, or the footer is clipped away.
 

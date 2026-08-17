@@ -47,11 +47,13 @@ export class LcarsFrame extends LcarsElement {
          outside the box to keep it honest. */
       max-height: 100%;
       overflow: auto;
-      /* Container queries measure the content box, so a scrollbar appearing
-         changes the width the query sees and can decide the layout by itself.
-         Reserving the space removes that band around the threshold. Invisible
-         on overlay scrollbars, so the gate cannot check this one. */
-      scrollbar-gutter: stable;
+      /* No scrollbar-gutter here, unlike the regions inside. This box is the
+         query container, and a reserved gutter comes out of the content box
+         the query measures, so it would move the documented threshold by the
+         width of a scrollbar and leave a permanent empty band on every frame.
+         The cost of leaving it off is narrower: a frame within a scrollbar's
+         width of the threshold can have its layout decided by whether one
+         appears. */
 
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);

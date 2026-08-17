@@ -12,14 +12,15 @@ import { LcarsElement } from './base';
  */
 export class LcarsPanel extends LcarsElement {
   static override styles = css`
+    /* No clamp on the host. A panel slotted straight into a frame region sits
+       in a flex container with a definite height, so a percentage max-height
+       here resolves and cuts the panel down to the region, giving it an inner
+       scroller and stopping the region from scrolling it. Panels grow; the
+       region they sit in is what scrolls. The clamp belongs one level down,
+       where it only fires if a consumer sizes the panel itself. */
     :host {
       display: block;
       box-sizing: border-box;
-      /* Never paint outside the box we were given. Inert until a parent
-         bounds us, which is why every panel in the workbench is unaffected.
-         See the same pair on lcars-frame, and the hit-test that guards both. */
-      max-height: 100%;
-      overflow: auto;
     }
 
     .panel-container {
