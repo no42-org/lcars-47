@@ -571,16 +571,23 @@ describe('frame height contract', () => {
           heading: string;
           updateComplete: Promise<unknown>;
         };
-        elbow.heading = 'UNITED FEDERATION OF PLANETS STARFLEET COMMAND SECTOR 001';
+        // Long enough to ask for more than the whole row, which is what took
+        // the band's width to zero when only its height had been fixed.
+        elbow.heading = 'UNITED FEDERATION OF PLANETS STARFLEET COMMAND SECTOR 001 '.repeat(2);
         await elbow.updateComplete;
 
         const band = frame.shadowRoot!.querySelector('.slot-top-bar')!.getBoundingClientRect();
         const content = frame.querySelector('[slot="top-bar"]')!.getBoundingClientRect();
+        const arch = frame
+          .querySelector('lcars-elbow[slot="elbow-tl"]')!
+          .shadowRoot!.querySelector('.arch')!.getBoundingClientRect();
         return {
-          bandHeight: Math.round(band.height),
-          contentHeight: Math.round(content.height),
+          bandWidth: Math.round(band.width),
+          archWidth: Math.round(arch.width),
           spillsBelow: Math.round(content.bottom - band.bottom),
           spillsAbove: Math.round(band.top - content.top),
+          spillsRight: Math.round(content.right - band.right),
+          scrollsSideways: frame.scrollWidth > frame.clientWidth,
         };
       });
       expect(r.spillsBelow, 'bar text rendered below its band').toBeLessThanOrEqual(
@@ -589,6 +596,15 @@ describe('frame height contract', () => {
       expect(r.spillsAbove, 'bar text rendered above its band').toBeLessThanOrEqual(
         SUBPIXEL_TOLERANCE_PX
       );
+      // The band grew in the axis that was fixed and vanished in the other, so
+      // both are asserted here.
+      expect(r.spillsRight, 'bar text rendered right of its band').toBeLessThanOrEqual(
+        SUBPIXEL_TOLERANCE_PX
+      );
+      expect(r.bandWidth, 'band collapsed to nothing').toBeGreaterThan(0);
+      expect(r.scrollsSideways, 'the elbow pushed the frame sideways').toBe(false);
+      // Whatever else gives, the arch stays lined up with its column.
+      expect(r.archWidth).toBe(160);
     } finally {
       await p.close();
     }

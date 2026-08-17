@@ -105,10 +105,21 @@ export class LcarsFrame extends LcarsElement {
       gap: var(--lcars-gap-md, 8px);
     }
 
+    /* The elbow is sized by its own arch plus heading, and a long heading can
+       ask for more than the whole row. It yields rather than taking the band's
+       width to zero: the heading has an ellipsis for exactly this, which never
+       fired while nothing could constrain it. The arch is what must not shrink,
+       since it lines up with the column beneath it. */
     .slot-elbow-tl,
     .slot-elbow-bl {
       display: flex;
-      flex: 0 0 auto;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .slot-elbow-tl slot::slotted(*),
+    .slot-elbow-bl slot::slotted(*) {
+      min-width: 0;
     }
 
     /* Bar-height bands pinned to the same edge as the elbow's bar extension, so
@@ -116,7 +127,10 @@ export class LcarsFrame extends LcarsElement {
     .slot-top-bar,
     .slot-footer {
       display: flex;
-      flex: 1;
+      /* Basis auto, not zero: when the row runs short the band and the elbow
+         give up width in proportion to what each asked for, rather than the
+         band collapsing to nothing because it asked for nothing. */
+      flex: 1 1 auto;
       min-width: 0;
       /* A minimum, not a height. How much room this band gets depends on how
          long the neighbouring elbow's heading is, which is an unrelated
