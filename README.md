@@ -65,8 +65,8 @@ import { setLcarsTheme, playLcarsSound } from '@no42-org/lcars-47';
 If you would rather not authenticate, the release assets are served anonymously. Grab the two files straight from a release:
 
 ```html
-<link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.0.2/lcars.css" />
-<script src="https://github.com/no42-org/lcars-47/releases/download/v0.0.2/lcars.iife.js"></script>
+<link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.0/lcars.css" />
+<script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.0/lcars.iife.js"></script>
 ```
 
 All custom elements are registered automatically, and the utility functions are available under `window.Lcars`.
@@ -83,10 +83,10 @@ For production, download the files and serve them yourself rather than hot-linki
   <head>
     <meta charset="UTF-8" />
     <title>LCARS Console</title>
-    <link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.0.2/lcars.css" />
+    <link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.0/lcars.css" />
     <!-- The IIFE bundle is self-contained. The ESM entry externalizes lit, so
          it needs a bundler (or an import map) rather than a plain script tag. -->
-    <script src="https://github.com/no42-org/lcars-47/releases/download/v0.0.2/lcars.iife.js"></script>
+    <script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.0/lcars.iife.js"></script>
   </head>
   <body>
     <lcars-frame theme="tng">
