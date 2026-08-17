@@ -303,6 +303,41 @@ describe('frame height contract', () => {
     }
   });
 
+  it('lets a keyboard reach and scroll the regions it made scrollable', async () => {
+    // The attribute itself is asserted in the unit suite; this checks the
+    // behaviour it exists for. Chromium makes scroll containers focusable on
+    // its own, so this would pass without `tabindex` here — it is the other
+    // engines the attribute is for.
+    const r = await withTallMain(SHORT_VIEWPORT, async (p) => {
+      const scrollTop = () =>
+        p.evaluate(
+          () =>
+            document.querySelector('lcars-frame')!.shadowRoot!.querySelector('.slot-main')!.scrollTop
+        );
+
+      const focused = await p.evaluate(() => {
+        const root = document.querySelector('lcars-frame')!.shadowRoot!;
+        const main = root.querySelector('.slot-main') as HTMLElement;
+        main.focus();
+        return root.activeElement === main;
+      });
+      const before = await scrollTop();
+      // Real key press through the browser's input stack, not a synthetic
+      // event: the point is that the browser scrolls the focused region.
+      await p.keyboard.press('End');
+      await p.waitForFunction(
+        () =>
+          document.querySelector('lcars-frame')!.shadowRoot!.querySelector('.slot-main')!.scrollTop >
+          0,
+        undefined,
+        { timeout: 2_000 }
+      );
+      return { focused, before, after: await scrollTop() };
+    });
+    expect(r.focused).toBe(true);
+    expect(r.after).toBeGreaterThan(r.before);
+  });
+
   it('lets main keep its natural height below the narrow breakpoint', async () => {
     // Guard rather than reproduction: this passes today. Pinning a shell height
     // on a phone, where the stacked sidebar alone is taller than half the

@@ -142,7 +142,17 @@ setLcarsTheme('ds9'); // 'tng' | 'ds9' | 'nemesis' | 'contrast'
 Responsive 2D CSS grid layout wrapping standard LCARS interfaces.
 - **Slots**: `top-bar`, `elbow-tl`, `sidebar`, `main`, `footer-readout`, `footer`, `elbow-bl`, plus the default slot (rendered in the main area).
 - `elbow-tl` shares the header row with `top-bar`, and `elbow-bl` shares the footer row with `footer-readout`: the elbow is placed first and sized by its own arch plus heading, and the bar text follows it on the same line.
-- **Properties**: `theme` (`'tng' | 'ds9' | 'nemesis' | 'contrast'`).
+- **Properties**: `theme` (`'tng' | 'ds9' | 'nemesis' | 'contrast'`), `mainLabel` / `main-label`, `sidebarLabel` / `sidebar-label`.
+
+#### Keyboard and screen readers
+
+`main` and `sidebar` scroll, so both are focusable (`tabindex="0"`): content that has scrolled out of view has to be reachable without a pointer. Chrome 127 and later makes scroll containers focusable on its own, but Safari and Firefox do not, so the frame does not leave it to the browser. The focus ring is drawn on keyboard focus only, never on a click.
+
+Both regions are landmarks (`main` and `complementary`) and are announced by role, so neither carries a name by default — the library ships no user-visible strings. Name them when a page holds more than one frame, or when the role alone is not descriptive:
+
+```html
+<lcars-frame main-label="ENGINEERING TELEMETRY" sidebar-label="CONSOLE CONTROLS"> … </lcars-frame>
+```
 
 #### Height and scrolling
 
