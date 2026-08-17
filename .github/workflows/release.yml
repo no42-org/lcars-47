@@ -77,12 +77,20 @@ jobs:
 
       - run: make release-build
 
-      # SBOM must exist before checksums are computed, or it ships unverifiable.
-      - name: Generate SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+      # The SBOM itself comes out of make release-build (npm sbom, first-party).
+      # This renders it as a self-contained HTML report. Both must exist before
+      # checksums are computed, or they ship unverifiable.
+      #
+      # image is pinned to a digest deliberately: the action's own resolution
+      # falls back to the mutable report-rc tag, and this job signs what it
+      # produces, so it must not pull a moving image. Dependabot bumps the
+      # action pin but not this digest; update it when bumping the action.
+      - name: Render SBOM report
+        uses: no42-org/blitsbom@b3cb2b1bdd5664193478acf04812251fdc8eb124 # v0.7.1
         with:
-          path: .
-          output-file: release/sbom.spdx.json
+          sbom: release/sbom.cdx.json
+          output: release/sbom-report.html
+          image: ghcr.io/no42-org/blitsbom@sha256:72ac31712ac30279ed4b297fbf6453182288862c678e8c77c83e70fb2ffb30b5
 
       - name: Checksums and signature
         run: |

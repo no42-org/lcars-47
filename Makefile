@@ -57,6 +57,10 @@ release-build: verify ## Assemble signed-release inputs into release/
 	$(NPM) pack --pack-destination release
 	# Standalone bundles for direct download / CDN mirroring.
 	cp dist/lcars.iife.js dist/lcars.css dist/index.d.ts release/
+	# SBOM of what ships (runtime tree only), generated first-party by npm so
+	# the release job needs no third-party tooling for it. CycloneDX rather
+	# than SPDX because the blitsbom VEX overlay is CycloneDX-only.
+	$(NPM) sbom --sbom-format cyclonedx --omit dev > release/sbom.cdx.json
 
 dev: node_modules ## Start the workbench dev server
 	$(NPM) run dev

@@ -39,7 +39,7 @@ A release is triggered by **pushing a `vX.Y.Z` tag**. Nothing else publishes.
    git push origin vX.Y.Z
    ```
 
-4. The `Release` workflow runs the same quality gates as CI, builds the artifacts, generates an SBOM, signs the checksums with cosign, attests build provenance, and creates a **draft** GitHub Release with everything attached.
+4. The `Release` workflow runs the same quality gates as CI, builds the artifacts (including a CycloneDX SBOM of the runtime dependency tree, generated first-party by `npm sbom` inside `make release-build`), renders the SBOM as a self-contained HTML report with [blitsbom](https://github.com/no42-org/blitsbom), signs the checksums with cosign, attests build provenance, and creates a **draft** GitHub Release with everything attached.
 5. Review the draft, add curated notes, and publish:
 
    ```bash
@@ -56,7 +56,8 @@ Prerelease tags (`vX.Y.Z-rc1`) are detected by the hyphen and marked `--prerelea
 | `lcars.iife.js` | Self-contained browser bundle for a `<script>` tag |
 | `lcars.css` | Standalone design tokens and layout stylesheet |
 | `index.d.ts` | Bundled TypeScript declarations for the whole public API |
-| `sbom.spdx.json` | SPDX software bill of materials |
+| `sbom.cdx.json` | CycloneDX software bill of materials (runtime dependencies) |
+| `sbom-report.html` | Self-contained HTML rendering of the SBOM, via blitsbom |
 | `checksums.txt` | SHA-256 of every other asset |
 | `checksums.txt.bundle` | cosign keyless Sigstore bundle (signature + certificate) |
 
