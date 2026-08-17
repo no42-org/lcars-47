@@ -16,7 +16,11 @@
     --lcars-bar-height-sm: 18px;
     --lcars-bar-height-lg: 38px;
     --lcars-sidebar-width: 160px;
-    --lcars-elbow-width: 160px;
+    /* --lcars-elbow-width is deliberately not declared here. An elbow arch
+       falls back to the sidebar width so it lines up with the column beneath
+       it, and declaring a value would break that link: a consumer widening the
+       sidebar alone would leave the arch behind. Set it on an elbow that has no
+       sidebar to line up with. */
     --lcars-elbow-height: 60px;
     /* Height of a <lcars-frame> shell. Set it to 100% to fill a sized
        container instead of the viewport. */

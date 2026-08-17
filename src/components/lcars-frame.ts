@@ -105,10 +105,21 @@ export class LcarsFrame extends LcarsElement {
       gap: var(--lcars-gap-md, 8px);
     }
 
+    /* The elbow is sized by its own arch plus heading, and a long heading can
+       ask for more than the whole row. It yields rather than taking the band's
+       width to zero: the heading has an ellipsis for exactly this, which never
+       fired while nothing could constrain it. The arch is what must not shrink,
+       since it lines up with the column beneath it. */
     .slot-elbow-tl,
     .slot-elbow-bl {
       display: flex;
-      flex: 0 0 auto;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .slot-elbow-tl slot::slotted(*),
+    .slot-elbow-bl slot::slotted(*) {
+      min-width: 0;
     }
 
     /* Bar-height bands pinned to the same edge as the elbow's bar extension, so
@@ -116,9 +127,16 @@ export class LcarsFrame extends LcarsElement {
     .slot-top-bar,
     .slot-footer {
       display: flex;
-      flex: 1;
+      /* Basis auto, not zero: when the row runs short the band and the elbow
+         give up width in proportion to what each asked for, rather than the
+         band collapsing to nothing because it asked for nothing. */
+      flex: 1 1 auto;
       min-width: 0;
-      height: var(--lcars-bar-height, 28px);
+      /* A minimum, not a height. How much room this band gets depends on how
+         long the neighbouring elbow's heading is, which is an unrelated
+         authoring decision, so a fixed height renders bar text outside the
+         bar as soon as it wraps. */
+      min-height: var(--lcars-bar-height, 28px);
       align-items: center;
       gap: var(--lcars-gap-sm, 4px);
     }
@@ -207,13 +225,12 @@ export class LcarsFrame extends LcarsElement {
         flex-wrap: wrap;
       }
 
-      /* Too little width to sit beside the elbow: drop onto an own line and let
-         the bar text wrap instead of spilling out of the band. */
+      /* Too little width to sit beside the elbow: drop onto an own line. The
+         band already grows with its content at every width, so there is no
+         height to undo here. */
       .slot-top-bar,
       .slot-footer {
         flex-basis: 100%;
-        height: auto;
-        min-height: var(--lcars-bar-height, 28px);
       }
     }
   `;

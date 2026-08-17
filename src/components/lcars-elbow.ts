@@ -35,6 +35,18 @@ export class LcarsElbow extends LcarsElement {
        edge, so it lines up with the heading instead of floating above it. */
     .arch {
       line-height: var(--lcars-bar-height, 28px);
+      /* Whatever else gives, the arch keeps its width: it has to line up with
+         the sidebar column beneath it. */
+      flex: 0 0 auto;
+    }
+
+    /* Let a squeezed elbow pass the squeeze down to the heading, where the
+       ellipsis below can act on it, instead of overflowing its own host. */
+    .top-row,
+    .bottom-row,
+    .bar-extension,
+    .title-text {
+      min-width: 0;
     }
 
     .bar-extension {
@@ -63,7 +75,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.top-left .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-top-left-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -106,7 +118,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.bottom-left .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-bottom-left-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -149,7 +161,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.top-right .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-top-right-radius: var(--lcars-radius-elbow, 28px);
       display: flex;
@@ -193,7 +205,7 @@ export class LcarsElbow extends LcarsElement {
     }
 
     .elbow-container.bottom-right .arch {
-      width: var(--lcars-sidebar-width, 160px);
+      width: var(--lcars-elbow-width, var(--lcars-sidebar-width, 160px));
       height: var(--lcars-elbow-height, 60px);
       border-bottom-right-radius: var(--lcars-radius-elbow, 28px);
       display: flex;

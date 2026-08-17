@@ -201,6 +201,12 @@ Curved LCARS corner bracket rendered with CSS radii and a concave inner fillet.
 - **Properties**: `orientation` (`'top-left' | 'bottom-left' | 'top-right' | 'bottom-right'`), `heading`, `label`, `color`.
 - **Slots**: `label`, plus the default slot (both fall back to the matching property).
 
+The arch is as wide as `--lcars-elbow-width`, which has no value of its own and falls back to `--lcars-sidebar-width`. Inside a frame that is what keeps the arch lined up with the column beneath it, so widen the sidebar and the arch follows.
+
+Set `--lcars-elbow-width` on the elbow itself, or on a wrapper around it, for an elbow used where there is no sidebar to line up with. Setting it at `:root` reaches every elbow on the page, including the ones inside frames, and silently unaligns each arch from its own column. Before `0.1.0` this property was declared at `:root` with a value of `160px` and read by nothing; if you were using it as a constant in your own CSS, give your `var()` a fallback.
+
+An elbow's heading is as wide as its text, and the bar beside it takes what is left. A heading too long for the row does not take the bar's space: it ellipsizes, the bar keeps its share, and the arch keeps its width. Where the bar's own text still has to wrap, the bar grows to hold it rather than rendering text outside itself.
+
 ### `<lcars-button>`
 Tactile button with procedural audio feedback and keyboard interaction.
 - **Properties**: `color`, `shape` (`'pill' | 'pill-start' | 'pill-end' | 'rect' | 'bracket'`), `sound` (`'chirp' | 'acknowledge' | 'warning' | 'alert' | 'input' | 'deny' | 'beep' | 'warp' | 'silent' | 'none'`; `silent` and `none` suppress playback), `disabled`, `active`.
