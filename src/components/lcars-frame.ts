@@ -25,9 +25,15 @@ export class LcarsFrame extends LcarsElement {
     :host {
       display: block;
       container-type: inline-size;
-      /* Fills a parent that has a definite height; auto otherwise, in which
-         case the grid's own height governs and the host wraps it exactly. */
-      height: 100%;
+      /* Inline-size containment computes this box's width as if it had no
+         contents, so anywhere the frame is shrink-to-fit (a flex item, a
+         float, inline-block, absolutely positioned) that intrinsic width is
+         zero and the console silently disappears. An explicit width gives
+         every one of those cases something real to resolve against. */
+      width: 100%;
+      /* No height here on purpose. The grid owns it, so the host wraps the
+         grid exactly and cannot paint a band of frame-coloured dead space
+         under it when the two disagree. */
       background-color: var(--lcars-color-bg, #000000);
       color: var(--lcars-color-text, #ff9900);
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);

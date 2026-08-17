@@ -344,7 +344,13 @@ describe('LCARS Geometric Framework Components', () => {
       const styles = (frame.constructor as typeof LcarsFrame).styles?.toString() ?? '';
       const hostBlock = styles.match(/:host\s*\{[^}]*\}/)?.[0] ?? '';
       expect(hostBlock).toContain('container-type: inline-size');
-      expect(hostBlock).not.toMatch(/height:\s*var\(--lcars-frame-height/);
+      // Any height on the host is a second opinion about how tall the frame
+      // is, including `height: 100%`, which only looks harmless while the
+      // parent's height is indefinite. Grepping for the token alone missed it.
+      expect(hostBlock).not.toMatch(/(^|[^-])height:/);
+      // Containment zeroes the intrinsic width, so the host needs an explicit
+      // one or the frame collapses wherever it is shrink-to-fit.
+      expect(hostBlock).toMatch(/width:\s*100%/);
     });
 
     it('makes both scrollable regions focusable, and names them only on request', async () => {

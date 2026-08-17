@@ -168,13 +168,23 @@ The frame is a **viewport shell**: it is exactly `--lcars-frame-height` tall (`1
 
 That last row assumes the host page zeroes its body margin. A default document adds 8px around a `100dvh` frame, which is enough to make the page scroll on top of the frame's own scrolling regions.
 
-To put a frame inside a container instead of the viewport, give it a height and set the property:
+To put a frame inside a container instead of the viewport, set the property to a length:
+
+```html
+<div style="width: 800px">
+  <lcars-frame style="--lcars-frame-height: 400px"> … </lcars-frame>
+</div>
+```
+
+To fill a container of unknown height, tell the element to fill its parent as well. A percentage needs something definite to resolve against, and the frame deliberately declares no height of its own:
 
 ```html
 <div style="width: 800px; height: 400px">
-  <lcars-frame style="--lcars-frame-height: 100%"> … </lcars-frame>
+  <lcars-frame style="height: 100%; --lcars-frame-height: 100%"> … </lcars-frame>
 </div>
 ```
+
+The frame is always exactly as tall as `--lcars-frame-height`, so it never paints a band of dead space under itself or pushes a following sibling down.
 
 An embedded frame keeps its box whatever the window is doing, because the layout answers to the frame's own width rather than the viewport's — a 640px console stays a pinned shell on a phone, and a 360px one stacks on a desktop.
 

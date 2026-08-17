@@ -248,6 +248,7 @@ describe('frame height contract', () => {
         cell.style.cssText = 'width: 800px; height: 400px;';
         document.body.appendChild(cell);
         cell.appendChild(frame);
+        (frame as HTMLElement).style.height = '100%';
         (frame as HTMLElement).style.setProperty('--lcars-frame-height', '100%');
 
         const root = frame.shadowRoot!;
@@ -371,6 +372,10 @@ describe('frame height contract', () => {
         document.body.prepend(box);
         box.appendChild(frame);
         document.querySelector('.app-container')?.remove();
+        // Filling a container takes both halves: the element is told to fill
+        // its parent, and the frame is told to use that height. The token
+        // alone is a percentage with nothing definite to resolve against.
+        (frame as HTMLElement).style.height = '100%';
         (frame as HTMLElement).style.setProperty('--lcars-frame-height', '100%');
 
         const root = frame.shadowRoot!;
@@ -410,6 +415,69 @@ describe('frame height contract', () => {
     // first and then back up (#28).
     const r = await embed(VIEWPORT, { width: 400, height: 900 });
     expect(r.sidebarAboveMain).toBe(true);
+  });
+
+  it('survives being placed somewhere shrink-to-fit', async () => {
+    // Inline-size containment computes the host's width as if it had no
+    // contents, so without an explicit width the frame collapses to nothing in
+    // every one of these and renders invisible, with no error anywhere.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const widths = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        document.querySelector('.app-container')?.remove();
+        const parents: Record<string, string> = {
+          'flex item': 'display: flex; width: 1000px;',
+          'inline-block': 'display: inline-block; width: 1000px;',
+          float: 'width: 1000px;',
+          absolute: 'position: relative; width: 1000px; height: 600px;',
+        };
+        const out: Record<string, number> = {};
+        for (const [name, css] of Object.entries(parents)) {
+          const parent = document.createElement('div');
+          parent.style.cssText = css;
+          document.body.append(parent);
+          parent.appendChild(frame);
+          if (name === 'float') (frame as HTMLElement).style.cssText = 'float: left';
+          else if (name === 'absolute') (frame as HTMLElement).style.cssText = 'position: absolute';
+          else (frame as HTMLElement).style.cssText = '';
+          out[name] = Math.round(frame.getBoundingClientRect().width);
+        }
+        return out;
+      });
+      for (const [context, width] of Object.entries(widths)) {
+        expect(width, `frame collapsed as a ${context}`).toBeGreaterThan(100);
+      }
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('is exactly as tall as it says, whatever its parent is', async () => {
+    // The host must not carry a height of its own. When it does, a parent
+    // taller than the token leaves a band of frame-coloured dead space below
+    // the console and pushes the next sibling down.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        const parent = document.createElement('div');
+        parent.style.cssText = 'width: 800px; height: 800px;';
+        document.body.prepend(parent);
+        parent.appendChild(frame);
+        document.querySelector('.app-container')?.remove();
+        (frame as HTMLElement).style.setProperty('--lcars-frame-height', '400px');
+        const grid = frame.shadowRoot!.querySelector('.frame-grid')!;
+        return {
+          host: frame.getBoundingClientRect().height,
+          grid: grid.getBoundingClientRect().height,
+        };
+      });
+      expect(r.grid).toBeCloseTo(400, 0);
+      expect(r.host).toBeCloseTo(r.grid, 0);
+    } finally {
+      await p.close();
+    }
   });
 
   it('lets main keep its natural height below the narrow breakpoint', async () => {
