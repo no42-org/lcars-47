@@ -480,6 +480,96 @@ describe('frame height contract', () => {
     }
   });
 
+  /**
+   * Containment, asserted by hit-testing rather than by arithmetic.
+   *
+   * A scrolled element reports content rectangles far outside its own box while
+   * being correctly clipped, so `getBoundingClientRect` cannot tell a contained
+   * component from an escaping one. `elementFromPoint` can, and it states the
+   * invariant literally: nothing of this component is painted outside its box.
+   * Shadow content reports the host, so one probe covers everything inside.
+   */
+  async function paintsBelowItsBox(
+    selector: string,
+    build: string
+  ): Promise<{ escapes: boolean; found: string }> {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      return await p.evaluate(
+        ({ selector, build }) => {
+          const box = document.createElement('div');
+          box.style.cssText = 'position: absolute; top: 40px; left: 40px;';
+          document.body.prepend(box);
+          // eslint-disable-next-line no-new-func
+          new Function('box', build)(box);
+
+          const component = document.querySelector(selector)!;
+          const r = box.getBoundingClientRect();
+          const el = document.elementFromPoint(r.left + r.width / 2, r.bottom + 10);
+          // Slotted content answers as itself, not as the host, so ask whether
+          // whatever is painted there belongs to the component.
+          return {
+            escapes: !!el && (el === component || component.contains(el)),
+            found: el ? el.tagName.toLowerCase() : 'none',
+          };
+        },
+        { selector, build }
+      );
+    } finally {
+      await p.close();
+    }
+  }
+
+  it('paints nothing outside a container too small for it', async () => {
+    const r = await paintsBelowItsBox(
+      'lcars-frame',
+      `box.style.width = '360px';
+       box.style.height = '420px';
+       const frame = document.querySelector('lcars-frame');
+       box.appendChild(frame);
+       document.querySelector('.app-container')?.remove();
+       frame.style.height = '100%';
+       frame.style.setProperty('--lcars-frame-height', '100%');`
+    );
+    expect(r.escapes, `frame painted ${r.found} below its container`).toBe(false);
+  });
+
+  it('paints nothing outside a panel given a height smaller than its content', async () => {
+    const r = await paintsBelowItsBox(
+      'lcars-panel',
+      `box.style.width = '400px';
+       box.style.height = '120px';
+       const panel = document.querySelector('lcars-panel');
+       box.appendChild(panel);
+       document.querySelector('.app-container')?.remove();
+       panel.style.height = '120px';`
+    );
+    expect(r.escapes, `panel painted ${r.found} below its container`).toBe(false);
+  });
+
+  it('leaves an unbounded parent alone', async () => {
+    // The clamp must be inert wherever the parent's height is indefinite, which
+    // is every ordinary page, or it would cap the viewport shell too.
+    const p = await openWorkbench(NARROW_VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        const block = document.createElement('div');
+        block.setAttribute('slot', 'main');
+        block.style.cssText = 'height: 2000px;';
+        frame.appendChild(block);
+        return {
+          frameHeight: Math.round(frame.getBoundingClientRect().height),
+          pageScrolls: document.documentElement.scrollHeight > window.innerHeight,
+        };
+      });
+      expect(r.frameHeight).toBeGreaterThan(NARROW_VIEWPORT.height);
+      expect(r.pageScrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('lets main keep its natural height below the narrow breakpoint', async () => {
     // Guard rather than reproduction: this passes today. Pinning a shell height
     // on a phone, where the stacked sidebar alone is taller than half the
