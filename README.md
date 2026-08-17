@@ -313,3 +313,11 @@ Not everything useful costs money. A clear bug report with a reproduction, a doc
 ## License
 
 LGPL-3.0-or-later. Copyright 2026 Ronny Trommer <ronny@no42.org>.
+
+## Trademarks
+
+`Star Trek` and `LCARS` are trademarks of CBS Studios Inc.
+
+This project is an unofficial homage. It is not affiliated with, endorsed by, or sponsored by CBS Studios Inc., Paramount Global, or their subsidiaries. The names are used descriptively, to say what this library reproduces.
+
+The license above covers this source code. It grants nothing in respect of anyone else's trademarks or designs.
