@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install install-browsers typecheck test test-watch test-layout build verify dev clean distclean
+.PHONY: help install install-browsers typecheck test test-watch test-layout build site verify dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -40,10 +40,15 @@ test-layout: node_modules ## Run the browser layout gate
 build: node_modules ## Build ESM + IIFE + CSS + declarations, then verify dist
 	$(NPM) run build
 
+site: node_modules ## Build the workbench as a static site into site/ (GitHub Pages)
+	$(NPM) run build:site
+
 # Build before test on purpose: test/dist.test.ts gates its built-artifact
 # assertions on dist/ existing, so running tests first silently skips them on
-# every clean checkout, which is exactly what CI is.
-verify: typecheck build test test-layout ## Full gate: types, build, tests, dist and layout checks
+# every clean checkout, which is exactly what CI is. site comes last so that
+# ordering stays undisturbed; it catches workbench breakage in the PR gate,
+# since the Pages deploy workflow runs only make site and no other checks.
+verify: typecheck build test test-layout site ## Full gate: types, build, tests, dist, layout and site checks
 
 release-build: verify ## Assemble signed-release inputs into release/
 	rm -rf release && mkdir -p release
@@ -57,7 +62,7 @@ dev: node_modules ## Start the workbench dev server
 	$(NPM) run dev
 
 clean: ## Remove build output
-	rm -rf dist
+	rm -rf dist site
 
 distclean: clean ## Remove build output and installed dependencies
 	rm -rf node_modules

@@ -45,7 +45,7 @@ Everything runs through `make`; CI calls the same targets, so local and CI canno
 ```bash
 make install          # install from the lockfile
 make install-browsers # once: the browser the layout gate drives
-make verify           # the full gate: typecheck, build, tests, dist and layout checks
+make verify           # the full gate: typecheck, build, tests, dist, layout and site checks
 make dev              # workbench dev server at index.html
 make test-watch       # tests in watch mode
 make test-layout      # just the browser layout gate

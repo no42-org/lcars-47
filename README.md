@@ -15,7 +15,7 @@ Authentic Star Trek LCARS (Library Computer Access / Retrieval System) user inte
 ![The LCARS 47 workbench: live telemetry driving readouts, bargraphs and status pills inside an elbow frame, cycling through the TNG, DS9, Nemesis and high-contrast era palettes](docs/workbench.gif)
 
 The workbench above is `index.html` in this repository, recorded live.
-Run it yourself with `make dev`.
+[Try it in your browser](https://no42-org.github.io/lcars-47/) or run it locally with `make dev`.
 
 ## Features
 

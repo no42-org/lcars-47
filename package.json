@@ -37,6 +37,7 @@
     "dev": "vite",
     "build": "vite build && vite build --mode iife",
     "postbuild": "node scripts/verify-dist.mjs",
+    "build:site": "vite build --config vite.pages.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
