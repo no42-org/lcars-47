@@ -146,13 +146,15 @@ Responsive 2D CSS grid layout wrapping standard LCARS interfaces.
 
 #### Keyboard and screen readers
 
-`main` and `sidebar` scroll, so both are focusable (`tabindex="0"`): content that has scrolled out of view has to be reachable without a pointer. Chrome 127 and later makes scroll containers focusable on its own, but Safari and Firefox do not, so the frame does not leave it to the browser. The focus ring is drawn on keyboard focus only, never on a click.
+`main` and `sidebar` scroll, so both are focusable (`tabindex="0"`): content that has scrolled out of view has to be reachable without a pointer. Chrome 127 and later makes scroll containers keyboard-focusable on its own, but only those that do not already contain focusable descendants — a console region almost always holds a button, so that exemption rarely applies here, and Safari and Firefox do not implement it at all. The focus ring is drawn on keyboard focus only, never on a click.
 
-Both regions are landmarks (`main` and `complementary`) and are announced by role, so neither carries a name by default — the library ships no user-visible strings. Name them when a page holds more than one frame, or when the role alone is not descriptive:
+Both regions are landmarks (`main` and `complementary`) and are announced by role, so neither carries a name by default — the library ships no user-visible strings. Name them when the role alone is not descriptive:
 
 ```html
 <lcars-frame main-label="ENGINEERING TELEMETRY" sidebar-label="CONSOLE CONTROLS"> … </lcars-frame>
 ```
+
+Use **one frame per page**. Each renders a `main` landmark, and a document with two of them fails an accessibility audit whatever they are called. A second console on the same page needs its main region demoted to a plain region first.
 
 #### Height and scrolling
 

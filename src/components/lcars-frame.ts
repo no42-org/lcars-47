@@ -196,8 +196,13 @@ export class LcarsFrame extends LcarsElement {
 
       <!-- Both regions scroll, so both must be focusable: a keyboard-only user
            cannot otherwise reach content that has scrolled out of view. Chrome
-           127+ makes scroll containers focusable on its own; Safari and Firefox
-           do not, so this cannot be left to the user agent. -->
+           127+ does this for scrollers without focusable descendants, which a
+           console region rarely is; Safari and Firefox not at all.
+
+           Unconditional, though below the narrow breakpoint these regions stop
+           scrolling and the two tab stops buy nothing there. CSS cannot drive
+           tabindex, and a resize observer toggling it would reorder focus as
+           the window changes, which is worse than two inert stops. -->
       <aside class="slot-sidebar" tabindex="0" aria-label=${this.sidebarLabel || nothing}>
         <slot name="sidebar"></slot>
       </aside>

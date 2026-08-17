@@ -304,10 +304,12 @@ describe('frame height contract', () => {
   });
 
   it('lets a keyboard reach and scroll the regions it made scrollable', async () => {
-    // The attribute itself is asserted in the unit suite; this checks the
-    // behaviour it exists for. Chromium makes scroll containers focusable on
-    // its own, so this would pass without `tabindex` here — it is the other
-    // engines the attribute is for.
+    // Tab traversal, not `element.focus()`: programmatic focus succeeds on a
+    // scroll container in Chromium whether or not it carries `tabindex`, so a
+    // `.focus()`-based check would pass against a region no keyboard user can
+    // reach. Chromium's focusable-scroller behaviour skips any scroller that
+    // already contains focusable descendants, which both of these do.
+    const MAX_TAB_PRESSES = 40;
     const r = await withTallMain(SHORT_VIEWPORT, async (p) => {
       const scrollTop = () =>
         p.evaluate(
@@ -315,12 +317,21 @@ describe('frame height contract', () => {
             document.querySelector('lcars-frame')!.shadowRoot!.querySelector('.slot-main')!.scrollTop
         );
 
-      const focused = await p.evaluate(() => {
-        const root = document.querySelector('lcars-frame')!.shadowRoot!;
-        const main = root.querySelector('.slot-main') as HTMLElement;
-        main.focus();
-        return root.activeElement === main;
-      });
+      const onMain = () =>
+        p.evaluate(() => {
+          const root = document.querySelector('lcars-frame')!.shadowRoot!;
+          return root.activeElement === root.querySelector('.slot-main');
+        });
+
+      await p.evaluate(() => document.body.focus());
+      let focused = false;
+      let presses = 0;
+      while (!focused && presses < MAX_TAB_PRESSES) {
+        await p.keyboard.press('Tab');
+        presses += 1;
+        focused = await onMain();
+      }
+
       const before = await scrollTop();
       // Real key press through the browser's input stack, not a synthetic
       // event: the point is that the browser scrolls the focused region.
