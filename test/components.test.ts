@@ -333,8 +333,13 @@ describe('LCARS Geometric Framework Components', () => {
       await frame.updateComplete;
 
       expect(frame.getAttribute('data-lcars-theme')).toBe('ds9');
-      const grid = frame.shadowRoot?.querySelector('.frame-grid');
-      expect(grid).not.toBeNull();
+      // The host itself is the grid: a wrapper would mean two boxes owning the
+      // frame's height, which is what pushed the footer row off screen (#19).
+      // Asserted structurally, so any re-introduced wrapper fails this whatever
+      // it is called.
+      const main = frame.shadowRoot?.querySelector('.slot-main');
+      expect(main).not.toBeNull();
+      expect(main?.parentNode).toBe(frame.shadowRoot);
     });
 
     it('provides all named layout slots', async () => {
