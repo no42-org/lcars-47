@@ -56,8 +56,22 @@
     "vitest": "^4.1.10"
   },
   "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/no42-org/lcars-47.git"
+  },
+  "homepage": "https://lcars-47.no42.org",
+  "bugs": "https://github.com/no42-org/lcars-47/issues",
+  "keywords": [
+    "lcars",
+    "web-components",
+    "lit",
+    "design-tokens",
+    "ui",
+    "star-trek"
+  ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
+    "registry": "https://registry.npmjs.org",
     "access": "public"
   },
   "author": "Ronny Trommer <ronny@no42.org>",

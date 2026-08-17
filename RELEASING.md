@@ -87,14 +87,16 @@ gh attestation verify no42-org-lcars-47-X.Y.Z.tgz --repo no42-org/lcars-47
 
 ## Where the package is published
 
-The release workflow publishes to **GitHub Packages** (`npm.pkg.github.com`) as its last step, after every other step has succeeded — publishing is the one action here that cannot be undone, since a version number cannot be reused.
+The release workflow publishes to **npmjs.org** as its last step, after every other step has succeeded.
+Publishing is the one action here that cannot be undone, since a version number cannot be reused.
 
-It publishes the **exact tarball** that was checksummed, signed and attested, rather than repacking, so what a user installs is what the signature covers. Authentication uses the built-in `GITHUB_TOKEN`; there is no registry secret to manage. Prerelease tags publish under the `next` dist-tag so they never become `latest`.
+It publishes the **exact tarball** that was checksummed, signed and attested, rather than repacking, so what a user installs is what the signature covers.
+Authentication uses **npm trusted publishing**: the repo and workflow are registered as a trusted publisher on npmjs.com, npm exchanges the workflow's OIDC token itself, and npm provenance is generated automatically.
+There is no registry secret to manage.
+Prerelease tags publish under the `next` dist-tag so they never become `latest`.
 
-Consumers must authenticate to install from GitHub Packages, **even though the package is public** — that is a registry limitation, not a licensing one. The README documents the `.npmrc` this needs, and points anyone who would rather not authenticate at the release assets, which serve anonymously.
+Publishing to npmjs.org also lights up the unpkg and jsDelivr CDN paths, which mirror npmjs.org.
 
 ## Not yet wired up
-
-**Publishing to npmjs.com.** Would make `npm install` work with no `.npmrc` and no token, and would light up the unpkg and jsDelivr CDN paths, which mirror npmjs.com only and cannot serve GitHub Packages. It needs an npm account and an `NPM_TOKEN` secret. Publish with `--provenance` so npm carries the same SLSA attestation this pipeline already produces.
 
 **Preview builds from `main`.** The audit checklist expects a rolling preview. This project ships no container image, so the useful equivalent is a `preview` prerelease refreshed on each push to `main`. Not implemented yet.
