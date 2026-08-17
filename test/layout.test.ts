@@ -558,6 +558,72 @@ describe('frame height contract', () => {
     expect(r.escapes, `panel painted ${r.found} below its container`).toBe(false);
   });
 
+  it('keeps bar text inside its band when a long elbow heading squeezes it', async () => {
+    // How much room the bar gets depends on how long the *elbow's* heading is,
+    // which is an unrelated authoring decision. A fixed band height turns that
+    // into text rendered outside the bar. #18 fixed this below the narrow
+    // breakpoint only, which treated a general constraint as a mobile symptom.
+    const p = await openWorkbench({ width: 900, height: 720 });
+    try {
+      const r = await p.evaluate(async () => {
+        const frame = document.querySelector('lcars-frame')!;
+        const elbow = frame.querySelector('lcars-elbow[slot="elbow-tl"]') as HTMLElement & {
+          heading: string;
+          updateComplete: Promise<unknown>;
+        };
+        elbow.heading = 'UNITED FEDERATION OF PLANETS STARFLEET COMMAND SECTOR 001';
+        await elbow.updateComplete;
+
+        const band = frame.shadowRoot!.querySelector('.slot-top-bar')!.getBoundingClientRect();
+        const content = frame.querySelector('[slot="top-bar"]')!.getBoundingClientRect();
+        return {
+          bandHeight: Math.round(band.height),
+          contentHeight: Math.round(content.height),
+          spillsBelow: Math.round(content.bottom - band.bottom),
+          spillsAbove: Math.round(band.top - content.top),
+        };
+      });
+      expect(r.spillsBelow, 'bar text rendered below its band').toBeLessThanOrEqual(
+        SUBPIXEL_TOLERANCE_PX
+      );
+      expect(r.spillsAbove, 'bar text rendered above its band').toBeLessThanOrEqual(
+        SUBPIXEL_TOLERANCE_PX
+      );
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('sizes the elbow arch from its own property, falling back to the sidebar', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const elbow = document.querySelector('lcars-elbow') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        const arch = () =>
+          Math.round(elbow.shadowRoot!.querySelector('.arch')!.getBoundingClientRect().width);
+
+        const byDefault = arch();
+        // An elbow used outside a frame has no sidebar to inherit from, so it
+        // must be sizeable on its own terms.
+        elbow.style.setProperty('--lcars-elbow-width', '220px');
+        const overridden = arch();
+        elbow.style.removeProperty('--lcars-elbow-width');
+        // With no elbow width of its own, the arch tracks the sidebar column it
+        // has to line up with.
+        elbow.style.setProperty('--lcars-sidebar-width', '200px');
+        const followsSidebar = arch();
+        return { byDefault, overridden, followsSidebar };
+      });
+      expect(r.byDefault).toBe(160);
+      expect(r.overridden).toBe(220);
+      expect(r.followsSidebar).toBe(200);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('lets a panel grow inside the region that scrolls it', async () => {
     // The clamp must not reach panels placed in a frame region. Those sit in a
     // flex container with a definite height, so a clamp on the panel host
