@@ -34,27 +34,28 @@ describe('LCARS Telemetry & Data Displays', () => {
       expect(unitEl?.textContent).toBe('COCHRANES');
     });
 
-    it('reserves value-box width from the formatted length', async () => {
+    it('publishes the value character counts the width reservation consumes', async () => {
       // The geometry this buys is asserted in test/layout.test.ts; happy-dom
-      // can only check the contract that render() writes the reservation. It
-      // exists because Antonio's bold instance has proportional digit advances
-      // and no tnum feature, so without it a live value jitters the layout.
+      // can only check the contract that render() publishes the counts the
+      // stylesheet's min-width consumes. It exists because Antonio's bold
+      // instance has proportional digit advances and no tnum feature, so
+      // without it a live value jitters the layout.
       const readout = document.createElement('lcars-readout') as LcarsReadout;
       readout.value = 4750;
       document.body.appendChild(readout);
       await readout.updateComplete;
 
       const valueEl = () => readout.shadowRoot?.querySelector('.readout-value') as HTMLElement;
-      expect(valueEl().getAttribute('style')).toContain('min-width: calc(4ch + 4 *');
+      expect(valueEl().getAttribute('style')).toContain('--value-digits: 4; --value-others: 0;');
 
       readout.value = 9.94;
       readout.precision = 2;
       await readout.updateComplete;
-      expect(valueEl().getAttribute('style')).toContain('min-width: calc(4ch + 4 *');
+      expect(valueEl().getAttribute('style')).toContain('--value-digits: 3; --value-others: 1;');
 
       readout.value = null;
       await readout.updateComplete;
-      expect(valueEl().getAttribute('style')).toContain('min-width: calc(2ch + 2 *');
+      expect(valueEl().getAttribute('style')).toContain('--value-digits: 0; --value-others: 2;');
     });
 
     it('renders fallback when value is null, undefined, or empty', async () => {
@@ -142,6 +143,12 @@ describe('LCARS Telemetry & Data Displays', () => {
 
       const valEl = bar.shadowRoot?.querySelector('.bargraph-value');
       expect(valEl?.textContent).toBe('75.4 %');
+
+      // The numeric part publishes the counts its width reservation consumes,
+      // same contract as the readout value box.
+      const numEl = bar.shadowRoot?.querySelector('.bargraph-value-number');
+      expect(numEl?.textContent).toBe('75.4');
+      expect(numEl?.getAttribute('style')).toContain('--value-digits: 3; --value-others: 1;');
     });
 
     it('clamps values below min and above max', async () => {

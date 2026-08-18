@@ -5,7 +5,7 @@
 
 import { html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { LcarsElement } from './base';
+import { LcarsElement, valueReservationStyle } from './base';
 
 export type LcarsReadoutAlign = 'left' | 'center' | 'right';
 
@@ -75,11 +75,23 @@ export class LcarsReadout extends LcarsElement {
       font-weight: bold;
       /* tabular-nums is a request, not a guarantee: Antonio has no tnum
          feature, and its bold instance has proportional digit advances even
-         though the default weight's are uniform. The render() inline min-width
-         is what actually keeps the box stable; this stays for fonts that can
-         honour it. */
+         though the default weight's are uniform. The min-width below is what
+         actually keeps the box stable; this stays for fonts that can honour
+         it. */
       font-variant-numeric: tabular-nums;
       letter-spacing: var(--lcars-letter-spacing-normal, 0.05em);
+      /* Width reservation for live values: render() publishes the character
+         counts, and digits are charged the advance of '0' (1ch), punctuation
+         half of it, each plus the letter-spacing declared above — keep the two
+         declarations in step. This assumes '0' is the widest digit in the
+         active font, true for bold Antonio; a themed font that violates it
+         degrades to natural width (the jitter returns), it never breaks
+         rendering. Non-numeric values wider than the charge leave the
+         reservation inert. */
+      min-width: calc(
+        var(--value-digits, 0) * (1ch + var(--lcars-letter-spacing-normal, 0.05em)) +
+          var(--value-others, 0) * (0.5ch + var(--lcars-letter-spacing-normal, 0.05em))
+      );
       line-height: var(--lcars-line-height-tight, 1.1);
       color: var(--readout-color, var(--lcars-color-primary));
     }
@@ -172,9 +184,7 @@ export class LcarsReadout extends LcarsElement {
         ${this.label ? html`<span class="readout-label">${this.label}</span>` : ''}
         <div class="readout-value-row">
           ${this.valuePrefix ? html`<span class="readout-prefix">${this.valuePrefix}</span>` : ''}
-          <span
-            class="readout-value"
-            style="min-width: calc(${displayValue.length}ch + ${displayValue.length} * var(--lcars-letter-spacing-normal, 0.05em))"
+          <span class="readout-value" style="${valueReservationStyle(displayValue)}"
             >${displayValue}</span
           >
           ${this.unit ? html`<span class="readout-unit">${this.unit}</span>` : ''}

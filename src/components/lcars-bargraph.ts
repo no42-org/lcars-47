@@ -5,7 +5,7 @@
 
 import { html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { LcarsElement } from './base';
+import { LcarsElement, valueReservationStyle } from './base';
 
 export type LcarsBargraphOrientation = 'horizontal' | 'vertical';
 
@@ -39,6 +39,20 @@ export class LcarsBargraph extends LcarsElement {
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
       text-transform: uppercase;
       color: var(--bar-active-color, var(--lcars-color-primary));
+    }
+
+    /* The numeric part of a live value gets a width-stable box, or the value's
+       left edge shimmers at telemetry rate: bold Antonio's digit advances are
+       proportional and tabular-nums has no tnum feature to activate. Same
+       reservation as lcars-readout — digits at the advance of '0' (1ch),
+       others at half — using the letter-spacing declared on the header above;
+       keep the two in step. min-width needs a box, hence inline-block. */
+    .bargraph-value-number {
+      display: inline-block;
+      min-width: calc(
+        var(--value-digits, 0) * (1ch + var(--lcars-letter-spacing-wide, 0.08em)) +
+          var(--value-others, 0) * (0.5ch + var(--lcars-letter-spacing-wide, 0.08em))
+      );
     }
 
     .bargraph-track {
@@ -213,7 +227,11 @@ export class LcarsBargraph extends LcarsElement {
               <div class="bargraph-header">
                 ${this.label ? html`<span class="bargraph-label">${this.label}</span>` : ''}
                 ${this.showValue
-                  ? html`<span class="bargraph-value">${displayVal}${this.unit ? ` ${this.unit}` : ''}</span>`
+                  ? html`<span class="bargraph-value"
+                      ><span class="bargraph-value-number" style="${valueReservationStyle(displayVal)}"
+                        >${displayVal}</span
+                      >${this.unit ? ` ${this.unit}` : ''}</span
+                    >`
                   : ''}
               </div>
             `

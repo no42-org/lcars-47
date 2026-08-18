@@ -742,6 +742,42 @@ describe('frame height contract', () => {
     }
   });
 
+  it('keeps a bargraph value box the same size for every value with the same digit count', async () => {
+    // Same mechanism as the readout case above, surviving in a sibling: the
+    // bargraph header's shrink-to-fit value span shimmered at telemetry rate
+    // because bold digit advances are proportional. The reservation covers the
+    // numeric part only; the unit text rides outside it.
+    const SAME_WIDTH_VALUES = [80, 71, 77];
+    const r = await page.evaluate(async (values) => {
+      const gauge = document.getElementById('gauge-warp-core') as HTMLElement & {
+        value: number;
+        updateComplete: Promise<unknown>;
+      };
+      const out: Array<{ width: number; left: number }> = [];
+      for (const value of values) {
+        gauge.value = value;
+        await gauge.updateComplete;
+        const rect = gauge
+          .shadowRoot!.querySelector('.bargraph-value')!
+          .getBoundingClientRect();
+        out.push({ width: rect.width, left: rect.left });
+      }
+      return out;
+    }, SAME_WIDTH_VALUES);
+    for (const [i, sample] of r.entries()) {
+      expect(
+        Math.abs(sample.width - r[0].width),
+        `bargraph value width changed between ${SAME_WIDTH_VALUES[0]} and ${SAME_WIDTH_VALUES[i]}`
+      ).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+      // The shimmer the reservation removes: in the space-between header the
+      // span's left edge is what moved.
+      expect(
+        Math.abs(sample.left - r[0].left),
+        `bargraph value left edge moved between ${SAME_WIDTH_VALUES[0]} and ${SAME_WIDTH_VALUES[i]}`
+      ).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+    }
+  });
+
   it('lets main keep its natural height below the narrow breakpoint', async () => {
     // Guard rather than reproduction: this passes today. Pinning a shell height
     // on a phone, where the stacked sidebar alone is taller than half the
