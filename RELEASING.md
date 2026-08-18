@@ -56,8 +56,8 @@ Prerelease tags (`vX.Y.Z-rc1`) are detected by the hyphen and marked `--prerelea
 | `lcars.iife.js` | Self-contained browser bundle for a `<script>` tag |
 | `lcars.css` | Standalone design tokens and layout stylesheet |
 | `index.d.ts` | Bundled TypeScript declarations for the whole public API |
-| `sbom.cdx.json` | CycloneDX software bill of materials (runtime dependencies) |
-| `sbom-report.html` | Self-contained HTML rendering of the SBOM, via blitsbom |
+| `lcars-47-X.Y.Z-sbom.cdx.json` | CycloneDX software bill of materials (runtime dependencies) |
+| `lcars-47-X.Y.Z-sbom-report.html` | Self-contained HTML rendering of the SBOM, via blitsbom |
 | `checksums.txt` | SHA-256 of every other asset |
 | `checksums.txt.bundle` | cosign keyless Sigstore bundle (signature + certificate) |
 

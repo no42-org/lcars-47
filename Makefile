@@ -59,8 +59,10 @@ release-build: verify ## Assemble signed-release inputs into release/
 	cp dist/lcars.iife.js dist/lcars.css dist/index.d.ts release/
 	# SBOM of what ships (runtime tree only), generated first-party by npm so
 	# the release job needs no third-party tooling for it. CycloneDX rather
-	# than SPDX because the blitsbom VEX overlay is CycloneDX-only.
-	$(NPM) sbom --sbom-format cyclonedx --omit dev > release/sbom.cdx.json
+	# than SPDX because the blitsbom VEX overlay is CycloneDX-only. The
+	# filename carries the version, like the tarball next to it.
+	$(NPM) sbom --sbom-format cyclonedx --omit dev \
+		> "release/lcars-47-$$(node -p 'require("./package.json").version')-sbom.cdx.json"
 
 dev: node_modules ## Start the workbench dev server
 	$(NPM) run dev

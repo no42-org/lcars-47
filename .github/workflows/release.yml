@@ -57,16 +57,19 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Fail if the tag does not match the manifest version
+        id: version
         env:
           TAG: ${{ github.ref_name }}
         run: |
           # A v0.4.0 tag on a tree whose package.json says 0.3.0 ships a
           # bundle that self-reports the wrong version.
-          manifest="v$(node -p 'require("./package.json").version')"
-          if [ "$manifest" != "$TAG" ]; then
-            echo "tag $TAG does not match package.json ($manifest)" >&2
+          version="$(node -p 'require("./package.json").version')"
+          if [ "v$version" != "$TAG" ]; then
+            echo "tag $TAG does not match package.json (v$version)" >&2
             exit 1
           fi
+          # Exported for the versioned SBOM artifact names below.
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - run: make install
 
@@ -90,8 +93,8 @@ jobs:
       - name: Render SBOM report
         uses: no42-org/blitsbom@b3cb2b1bdd5664193478acf04812251fdc8eb124 # v0.7.1
         with:
-          sbom: release/sbom.cdx.json
-          output: release/sbom-report.html
+          sbom: release/lcars-47-${{ steps.version.outputs.version }}-sbom.cdx.json
+          output: release/lcars-47-${{ steps.version.outputs.version }}-sbom-report.html
           image: ghcr.io/no42-org/blitsbom@sha256:d7bb1cb75dc5444ea0e977b66a7860e9dc0a710812b2302bddd1d63a2af0d632 # report-0.7.1
 
       - name: Checksums and signature
