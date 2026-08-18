@@ -34,6 +34,29 @@ describe('LCARS Telemetry & Data Displays', () => {
       expect(unitEl?.textContent).toBe('COCHRANES');
     });
 
+    it('reserves value-box width from the formatted length', async () => {
+      // The geometry this buys is asserted in test/layout.test.ts; happy-dom
+      // can only check the contract that render() writes the reservation. It
+      // exists because Antonio's bold instance has proportional digit advances
+      // and no tnum feature, so without it a live value jitters the layout.
+      const readout = document.createElement('lcars-readout') as LcarsReadout;
+      readout.value = 4750;
+      document.body.appendChild(readout);
+      await readout.updateComplete;
+
+      const valueEl = () => readout.shadowRoot?.querySelector('.readout-value') as HTMLElement;
+      expect(valueEl().getAttribute('style')).toContain('min-width: calc(4ch + 4 *');
+
+      readout.value = 9.94;
+      readout.precision = 2;
+      await readout.updateComplete;
+      expect(valueEl().getAttribute('style')).toContain('min-width: calc(4ch + 4 *');
+
+      readout.value = null;
+      await readout.updateComplete;
+      expect(valueEl().getAttribute('style')).toContain('min-width: calc(2ch + 2 *');
+    });
+
     it('renders fallback when value is null, undefined, or empty', async () => {
       const readout = document.createElement('lcars-readout') as LcarsReadout;
       readout.placeholder = 'OFFLINE';

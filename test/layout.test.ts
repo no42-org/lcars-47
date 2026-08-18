@@ -699,6 +699,49 @@ describe('frame height contract', () => {
     }
   });
 
+  it('keeps a readout the same size for every value with the same digit count', async () => {
+    // Antonio's digits are uniform at the default weight but proportional at
+    // bold — '1' is a quarter narrower than '0' — and the font has no tnum
+    // feature for tabular-nums to activate. Without the value-box reservation
+    // a telemetry-driven readout changes width every tick, and on a phone-width
+    // viewport the workbench's propulsion row sat exactly on the flex-wrap
+    // boundary: WARP OUTPUT flipped between lines at telemetry rate.
+    const PHONE_VIEWPORT = { width: 375, height: 812 };
+    // Same digit count, opposite extremes of Antonio's bold advances.
+    const SAME_WIDTH_VALUES = [4700, 4111, 4757, 4820];
+    const p = await openWorkbench(PHONE_VIEWPORT);
+    try {
+      const r = await p.evaluate(async (values) => {
+        const readout = document.getElementById('readout-power') as HTMLElement & {
+          value: number;
+          updateComplete: Promise<unknown>;
+        };
+        const out: Array<{ width: number; top: number }> = [];
+        for (const value of values) {
+          readout.value = value;
+          await readout.updateComplete;
+          const rect = readout.getBoundingClientRect();
+          out.push({ width: rect.width, top: rect.top });
+        }
+        return out;
+      }, SAME_WIDTH_VALUES);
+      for (const [i, sample] of r.entries()) {
+        expect(
+          Math.abs(sample.width - r[0].width),
+          `readout width changed between ${SAME_WIDTH_VALUES[0]} and ${SAME_WIDTH_VALUES[i]}`
+        ).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+        // The user-visible symptom: a width jitter that crosses the row's wrap
+        // boundary moves the whole readout to another line.
+        expect(
+          Math.abs(sample.top - r[0].top),
+          `readout changed lines between ${SAME_WIDTH_VALUES[0]} and ${SAME_WIDTH_VALUES[i]}`
+        ).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+      }
+    } finally {
+      await p.close();
+    }
+  });
+
   it('lets main keep its natural height below the narrow breakpoint', async () => {
     // Guard rather than reproduction: this passes today. Pinning a shell height
     // on a phone, where the stacked sidebar alone is taller than half the

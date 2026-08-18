@@ -48,6 +48,7 @@ Each of these shipped as a real bug here at least once:
 - **A flex column with a definite height shrinks its children instead of scrolling.** `overflow: auto` on such a region never fires: content is silently compressed to fit and no scrollbar appears. Scrollable regions need `flex-shrink: 0` on what is slotted into them.
 - **Lit's `adoptedStyleSheets` outrank a `<style>` injected into the shadow root** at equal specificity. An override tried from devtools or a probe script can silently not apply; use `!important` when probing, and check it took.
 - **Backticks inside `css`/`html` templates end the template.** A CSS comment mentioning `` `1fr` `` is a parse error, and the message points at the number, not the comment.
+- **A variable font's instances can disagree about advance widths.** Antonio's digits are uniform at the default weight but proportional at bold (`1` is a quarter narrower than `0`), so bold live values jitter layout that regular-weight checks call stable — on a phone-width viewport that flipped a readout across its row's wrap boundary at telemetry rate. `font-variant-numeric: tabular-nums` cannot fix it: the font ships no `tnum` feature, so the declaration silently does nothing. `<lcars-readout>` reserves its value box per character (`ch` plus letter-spacing) instead; `test/layout.test.ts` holds the line.
 
 ## Conventions
 

@@ -10,7 +10,8 @@ import { LcarsElement } from './base';
 export type LcarsReadoutAlign = 'left' | 'center' | 'right';
 
 /**
- * `<lcars-readout>` renders a high-precision numeric or telemetry display with tabular spacing.
+ * `<lcars-readout>` renders a high-precision numeric or telemetry display with
+ * a width-stable value box, so live updates cannot jitter the layout around it.
  */
 export class LcarsReadout extends LcarsElement {
   static override styles = css`
@@ -72,6 +73,11 @@ export class LcarsReadout extends LcarsElement {
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
       font-size: var(--lcars-font-size-2xl, 2rem);
       font-weight: bold;
+      /* tabular-nums is a request, not a guarantee: Antonio has no tnum
+         feature, and its bold instance has proportional digit advances even
+         though the default weight's are uniform. The render() inline min-width
+         is what actually keeps the box stable; this stays for fonts that can
+         honour it. */
       font-variant-numeric: tabular-nums;
       letter-spacing: var(--lcars-letter-spacing-normal, 0.05em);
       line-height: var(--lcars-line-height-tight, 1.1);
@@ -166,7 +172,11 @@ export class LcarsReadout extends LcarsElement {
         ${this.label ? html`<span class="readout-label">${this.label}</span>` : ''}
         <div class="readout-value-row">
           ${this.valuePrefix ? html`<span class="readout-prefix">${this.valuePrefix}</span>` : ''}
-          <span class="readout-value">${displayValue}</span>
+          <span
+            class="readout-value"
+            style="min-width: calc(${displayValue.length}ch + ${displayValue.length} * var(--lcars-letter-spacing-normal, 0.05em))"
+            >${displayValue}</span
+          >
           ${this.unit ? html`<span class="readout-unit">${this.unit}</span>` : ''}
         </div>
       </div>
