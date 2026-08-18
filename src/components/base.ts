@@ -88,3 +88,21 @@ export class LcarsElement extends LitElement {
     return colorName;
   }
 }
+
+/**
+ * Inline style that publishes the character composition of a live value, so a
+ * component's stylesheet can reserve a width-stable box for it. Antonio's bold
+ * instance has proportional digit advances (`0` widest, `1` narrowest) and no
+ * `tnum` feature for `tabular-nums` to activate, so a shrink-to-fit value span
+ * changes width every telemetry tick. The consuming rule charges digits the
+ * advance of `0` (`1ch`) and other characters half of it; see AGENTS.md.
+ */
+export function valueReservationStyle(text: string): string {
+  let digits = 0;
+  let others = 0;
+  for (const ch of text) {
+    if (ch >= '0' && ch <= '9') digits += 1;
+    else others += 1;
+  }
+  return `--value-digits: ${digits}; --value-others: ${others};`;
+}

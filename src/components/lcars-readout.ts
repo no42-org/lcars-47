@@ -5,12 +5,13 @@
 
 import { html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { LcarsElement } from './base';
+import { LcarsElement, valueReservationStyle } from './base';
 
 export type LcarsReadoutAlign = 'left' | 'center' | 'right';
 
 /**
- * `<lcars-readout>` renders a high-precision numeric or telemetry display with tabular spacing.
+ * `<lcars-readout>` renders a high-precision numeric or telemetry display with
+ * a width-stable value box, so live updates cannot jitter the layout around it.
  */
 export class LcarsReadout extends LcarsElement {
   static override styles = css`
@@ -72,8 +73,32 @@ export class LcarsReadout extends LcarsElement {
       font-family: var(--lcars-font-family, 'Antonio', sans-serif);
       font-size: var(--lcars-font-size-2xl, 2rem);
       font-weight: bold;
+      /* tabular-nums is a request, not a guarantee: Antonio has no tnum
+         feature, and its bold instance has proportional digit advances even
+         though the default weight's are uniform. The min-width below is what
+         actually keeps the box stable; this stays for fonts that can honour
+         it. */
       font-variant-numeric: tabular-nums;
       letter-spacing: var(--lcars-letter-spacing-normal, 0.05em);
+      /* Width reservation for live values: render() publishes the character
+         counts, and digits are charged the advance of '0' (1ch), punctuation
+         half of it, each plus the letter-spacing declared above — keep the two
+         declarations in step. geometricPrecision is load-bearing: FreeType
+         (Linux) hints glyph advances per glyph, which made '7' wider than '0'
+         at 12px (7px vs 6px) and broke the charge; it forces true fractional
+         metrics so the ch arithmetic holds on every platform, and the
+         rounded-up charge keeps ~1px headroom on top. This assumes '0' is the
+         widest digit in the active font, true for bold Antonio; a themed font
+         that violates it degrades to natural width (the jitter returns), it
+         never breaks rendering. Non-numeric values wider than the charge
+         leave the reservation inert. */
+      text-rendering: geometricPrecision;
+      min-width: calc(
+        var(--value-digits, 0) *
+          (round(up, 1ch, 1px) + var(--lcars-letter-spacing-normal, 0.05em)) +
+          var(--value-others, 0) *
+          (round(up, 0.5ch, 1px) + var(--lcars-letter-spacing-normal, 0.05em))
+      );
       line-height: var(--lcars-line-height-tight, 1.1);
       color: var(--readout-color, var(--lcars-color-primary));
     }
@@ -166,7 +191,9 @@ export class LcarsReadout extends LcarsElement {
         ${this.label ? html`<span class="readout-label">${this.label}</span>` : ''}
         <div class="readout-value-row">
           ${this.valuePrefix ? html`<span class="readout-prefix">${this.valuePrefix}</span>` : ''}
-          <span class="readout-value">${displayValue}</span>
+          <span class="readout-value" style="${valueReservationStyle(displayValue)}"
+            >${displayValue}</span
+          >
           ${this.unit ? html`<span class="readout-unit">${this.unit}</span>` : ''}
         </div>
       </div>
