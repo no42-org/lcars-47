@@ -15,6 +15,7 @@ Everything goes through `make`; CI runs the same targets.
 make verify      # the gate: typecheck, build, test, dist, layout and site checks
 make test        # unit tests only, no browser
 make test-layout # browser layout gate only
+make test-compat # cross-engine invariants (Chromium, Firefox, WebKit); CI-only job, not in verify
 make dev         # workbench at index.html
 ```
 

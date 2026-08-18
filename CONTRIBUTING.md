@@ -49,6 +49,7 @@ make verify           # the full gate: typecheck, build, tests, dist, layout and
 make dev              # workbench dev server at index.html
 make test-watch       # tests in watch mode
 make test-layout      # just the browser layout gate
+make test-compat      # cross-engine invariants; needs `make install-browsers-all` once
 ```
 
 Run a single test file with `npx vitest run test/keypad.test.ts`, or a single case with `-t "substring of the test name"`.

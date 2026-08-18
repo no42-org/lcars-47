@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install install-browsers typecheck test test-watch test-layout build site verify dev clean distclean
+.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -17,6 +17,12 @@ install: ## Install dependencies from the lockfile
 
 install-browsers: node_modules ## Install the browser the layout gate drives
 	$(NPM) run install:browsers
+
+# Only the cross-engine job needs all three; keeping this separate spares the
+# verify and release jobs Firefox and WebKit downloads (and WebKit's apt
+# dependency set) for gates that only launch Chromium.
+install-browsers-all: node_modules ## Install all three engines for the compat tier
+	$(NPM) run install:browsers:all
 
 node_modules: package-lock.json
 	$(NPM) ci
@@ -36,6 +42,11 @@ test-watch: node_modules ## Run tests in watch mode
 # fails, never skips, when that browser is missing.
 test-layout: node_modules ## Run the browser layout gate
 	$(NPM) run test:layout
+
+# Behavioral invariants in all three engines. Deliberately not part of verify:
+# the local gate stays single-browser, CI runs this as its own job.
+test-compat: node_modules ## Run cross-engine invariants (Chromium, Firefox, WebKit)
+	$(NPM) run test:compat
 
 build: node_modules ## Build ESM + IIFE + CSS + declarations, then verify dist
 	$(NPM) run build
