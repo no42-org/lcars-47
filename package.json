@@ -42,7 +42,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:layout": "vitest run --config vitest.layout.config.ts",
-    "install:browsers": "playwright install --with-deps chromium"
+    "test:compat": "vitest run --config vitest.compat.config.ts",
+    "install:browsers": "playwright install --with-deps chromium",
+    "install:browsers:all": "playwright install --with-deps chromium firefox webkit"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.12",

@@ -46,6 +46,9 @@ A release is triggered by **pushing a `vX.Y.Z` tag**. Nothing else publishes.
    gh release edit vX.Y.Z --notes-file notes.md --draft=false
    ```
 
+6. After the Pages deploy refreshes the demo, open it on a real phone and scroll through.
+   This step is manual on purpose: the cross-engine suite runs Playwright WebKit, which shares Safari's layout engine but not its text stack, and font metrics are exactly where a phone has already diverged once.
+
 Prerelease tags (`vX.Y.Z-rc1`) are detected by the hyphen and marked `--prerelease` automatically.
 
 ## What a release contains

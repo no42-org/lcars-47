@@ -84,6 +84,14 @@ describe('LCARS Procedural Audio Subsystem', () => {
     expect(synth.isMuted()).toBe(false);
   });
 
+  it('reports the context state read-only: null before first play, live after', () => {
+    expect(synth.getContextState()).toBeNull();
+    // Reading must not have created a context as a side effect.
+    expect(synth.getContextState()).toBeNull();
+    synth.play('chirp');
+    expect(synth.getContextState()).toBe('running');
+  });
+
   it('sets and clamps volume level between 0.0 and 1.0, ignoring NaN', () => {
     synth.setVolume(0.8);
     expect(synth.getVolume()).toBe(0.8);

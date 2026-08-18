@@ -84,6 +84,16 @@ export class LcarsAudioSynthesizer {
     return this.muted;
   }
 
+  /**
+   * State of the underlying AudioContext, or `null` when none exists yet
+   * (nothing has played, Web Audio is unavailable, or construction failed).
+   * Read-only observability for consumers and tests; it never creates a
+   * context the way play() does.
+   */
+  public getContextState(): AudioContextState | null {
+    return this.ctx ? this.ctx.state : null;
+  }
+
   public async resume(): Promise<void> {
     const ctx = this.getAudioContext();
     if (ctx && ctx.state === 'suspended') {
