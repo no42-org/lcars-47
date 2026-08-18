@@ -83,14 +83,21 @@ export class LcarsReadout extends LcarsElement {
       /* Width reservation for live values: render() publishes the character
          counts, and digits are charged the advance of '0' (1ch), punctuation
          half of it, each plus the letter-spacing declared above — keep the two
-         declarations in step. This assumes '0' is the widest digit in the
-         active font, true for bold Antonio; a themed font that violates it
-         degrades to natural width (the jitter returns), it never breaks
-         rendering. Non-numeric values wider than the charge leave the
-         reservation inert. */
+         declarations in step. geometricPrecision is load-bearing: FreeType
+         (Linux) hints glyph advances per glyph, which made '7' wider than '0'
+         at 12px (7px vs 6px) and broke the charge; it forces true fractional
+         metrics so the ch arithmetic holds on every platform, and the
+         rounded-up charge keeps ~1px headroom on top. This assumes '0' is the
+         widest digit in the active font, true for bold Antonio; a themed font
+         that violates it degrades to natural width (the jitter returns), it
+         never breaks rendering. Non-numeric values wider than the charge
+         leave the reservation inert. */
+      text-rendering: geometricPrecision;
       min-width: calc(
-        var(--value-digits, 0) * (1ch + var(--lcars-letter-spacing-normal, 0.05em)) +
-          var(--value-others, 0) * (0.5ch + var(--lcars-letter-spacing-normal, 0.05em))
+        var(--value-digits, 0) *
+          (round(up, 1ch, 1px) + var(--lcars-letter-spacing-normal, 0.05em)) +
+          var(--value-others, 0) *
+          (round(up, 0.5ch, 1px) + var(--lcars-letter-spacing-normal, 0.05em))
       );
       line-height: var(--lcars-line-height-tight, 1.1);
       color: var(--readout-color, var(--lcars-color-primary));

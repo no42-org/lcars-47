@@ -45,13 +45,19 @@ export class LcarsBargraph extends LcarsElement {
        left edge shimmers at telemetry rate: bold Antonio's digit advances are
        proportional and tabular-nums has no tnum feature to activate. Same
        reservation as lcars-readout — digits at the advance of '0' (1ch),
-       others at half — using the letter-spacing declared on the header above;
-       keep the two in step. min-width needs a box, hence inline-block. */
+       others at half, rounded up to whole pixels — using the letter-spacing
+       declared on the header above; keep the two in step. geometricPrecision
+       is load-bearing: FreeType's per-glyph advance hinting made '7' wider
+       than '0' at this 12px size, defeating any '0'-based charge; it forces
+       true fractional metrics. min-width needs a box, hence inline-block. */
     .bargraph-value-number {
       display: inline-block;
+      text-rendering: geometricPrecision;
       min-width: calc(
-        var(--value-digits, 0) * (1ch + var(--lcars-letter-spacing-wide, 0.08em)) +
-          var(--value-others, 0) * (0.5ch + var(--lcars-letter-spacing-wide, 0.08em))
+        var(--value-digits, 0) *
+          (round(up, 1ch, 1px) + var(--lcars-letter-spacing-wide, 0.08em)) +
+          var(--value-others, 0) *
+          (round(up, 0.5ch, 1px) + var(--lcars-letter-spacing-wide, 0.08em))
       );
     }
 
