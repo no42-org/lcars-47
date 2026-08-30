@@ -91,7 +91,7 @@ jobs:
       # digest; update both together, and keep the trailing tag comment in
       # sync so a reviewer can cross-reference it.
       - name: Render SBOM report
-        uses: no42-org/blitsbom@b3cb2b1bdd5664193478acf04812251fdc8eb124 # v0.7.1
+        uses: no42-org/blitsbom@656cc261f9bfec14087c8a3a536f4195fc321c03 # v0.8.1
         with:
           sbom: release/lcars-47-${{ steps.version.outputs.version }}-sbom.cdx.json
           output: release/lcars-47-${{ steps.version.outputs.version }}-sbom-report.html
