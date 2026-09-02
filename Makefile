@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify dev clean distclean
+.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify verify-pins dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -60,6 +60,12 @@ site: node_modules ## Build the workbench as a static site into site/ (GitHub Pa
 # ordering stays undisturbed; it catches workbench breakage in the PR gate,
 # since the Pages deploy workflow runs only make site and no other checks.
 verify: typecheck build test test-layout site ## Full gate: types, build, tests, dist, layout and site checks
+
+# Deliberately outside verify and free of the node_modules prerequisite: this
+# lints workflow text, not the library, and belongs with actionlint and zizmor
+# in the Lint workflows job. Node builtins only, so that job stays install-free.
+verify-pins: ## Check that action pins and the images passed to them agree
+	node scripts/verify-action-pins.mjs
 
 release-build: verify ## Assemble signed-release inputs into release/
 	rm -rf release && mkdir -p release
