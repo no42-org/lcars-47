@@ -89,9 +89,9 @@ jobs:
       # a tag can be repointed, and this job signs what it produces, so it must
       # not pull a moving image. Dependabot bumps the action pin but not this
       # digest; update both together, and keep the trailing tag comment in
-      # sync so a reviewer can cross-reference it. Nothing enforces the pairing
-      # here, and release.yml only runs on a tag, so a bump that moves one and
-      # not the other stays invisible until a release.
+      # sync so a reviewer can cross-reference it. release.yml only runs on a
+      # tag, so make verify-pins checks the pairing in the quality gates on
+      # every PR. It compares the two version comments, not the digest itself.
       - name: Render SBOM report
         uses: no42-org/blitsbom@ff9f8516070e082f78bc98453217d6f43cc4a357 # v0.8.3
         with:
