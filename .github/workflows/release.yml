@@ -93,11 +93,11 @@ jobs:
       # here, and release.yml only runs on a tag, so a bump that moves one and
       # not the other stays invisible until a release.
       - name: Render SBOM report
-        uses: no42-org/blitsbom@0ddd4fd19cc563e3e1c1e27f7be2ffc7225dca65 # v0.8.2
+        uses: no42-org/blitsbom@ff9f8516070e082f78bc98453217d6f43cc4a357 # v0.8.3
         with:
           sbom: release/lcars-47-${{ steps.version.outputs.version }}-sbom.cdx.json
           output: release/lcars-47-${{ steps.version.outputs.version }}-sbom-report.html
-          image: ghcr.io/no42-org/blitsbom@sha256:2b1fdaa7760461b273f8c3d9e6bf0f48583b2e4916bebc61604e12cf38971002 # report-0.8.2
+          image: ghcr.io/no42-org/blitsbom@sha256:d109ab621f57de3cdea0ccb4299793295186277eb9a5e8243b53758333eb21f3 # report-0.8.3
 
       - name: Checksums and signature
         run: |
