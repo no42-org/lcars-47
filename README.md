@@ -201,7 +201,19 @@ Curved LCARS corner bracket rendered with CSS radii and a concave inner fillet.
 - **Properties**: `orientation` (`'top-left' | 'bottom-left' | 'top-right' | 'bottom-right'`), `heading`, `label`, `color`.
 - **Slots**: `label`, plus the default slot (both fall back to the matching property).
 
-Slotted content takes the elbow's dark on-accent colour, matching the properties. Set a colour on the slotted element itself to change it. A colour set on the elbow or its ancestors does not reach slotted content.
+Slotted content and the `label` and `heading` properties share one text colour.
+Set `--lcars-elbow-text` on the elbow, or on a wrapper around it, to change that colour.
+Setting it at `:root` reaches every elbow on the page, dark or light.
+A colour set on a slotted element still wins.
+A plain `color` on the elbow or its ancestors does not reach this text.
+
+By default the text is `--lcars-color-on-accent`.
+The `color` values `surface`, `dark-blue`, `red` and `alert-red` use `--lcars-color-on-accent-inverse` instead, because they are dark in every theme.
+So do the library's own black and background tokens.
+Raw CSS colours and your own custom properties cannot be classified, so a dark one needs `--lcars-elbow-text`.
+`alert` and `accent` are dark only in some themes, so their text stays on-accent.
+That text is under 4.5:1 for `alert` in `tng` and `ds9`, and for `accent` in `ds9`.
+Set `--lcars-elbow-text` on those too if you need AA there.
 
 The arch is as wide as `--lcars-elbow-width`, which has no value of its own and falls back to `--lcars-sidebar-width`. Inside a frame that is what keeps the arch lined up with the column beneath it, so widen the sidebar and the arch follows.
 

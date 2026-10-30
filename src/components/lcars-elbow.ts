@@ -10,6 +10,23 @@ import { LcarsElement } from './base';
 export type LcarsElbowDirection = 'top-left' | 'bottom-left' | 'top-right' | 'bottom-right';
 
 /**
+ * Resolved colours that need light text in every theme, by measured contrast.
+ * `deep-teal` looks dark but black still beats white on it. `alert` and `accent`
+ * flip with the theme, which this file cannot see, so they stay on on-accent.
+ */
+const DARK_COLORS = new Set([
+  'var(--lcars-color-surface)',
+  'var(--lcars-ds9-dark-blue)',
+  'var(--lcars-tng-red)',
+  'var(--lcars-ds9-alert-red)',
+  // Reachable only by custom-property name.
+  'var(--lcars-color-bg)',
+  'var(--lcars-tng-black)',
+  'var(--lcars-nemesis-slate)',
+  'var(--lcars-contrast-black)',
+]);
+
+/**
  * `<lcars-elbow>` renders an authentic curved LCARS L-shape corner block.
  */
 export class LcarsElbow extends LcarsElement {
@@ -31,7 +48,7 @@ export class LcarsElbow extends LcarsElement {
       background-color: var(--elbow-color, var(--lcars-color-primary));
       /* Inherited, not set on the slots' content: page text is often the same
          colour as this surface, and a slotted element's own colour must win. */
-      color: var(--lcars-color-on-accent, #000000);
+      color: var(--lcars-elbow-text, var(--elbow-text-default));
     }
 
     /* The label rides in a band as tall as the bar extension, pinned to the same
@@ -288,12 +305,18 @@ export class LcarsElbow extends LcarsElement {
 
   override render(): TemplateResult {
     const bgColor = this.resolveColor(this.color, '--lcars-color-primary');
+    const defaultText = DARK_COLORS.has(bgColor)
+      ? 'var(--lcars-color-on-accent-inverse, #ffffff)'
+      : 'var(--lcars-color-on-accent, #000000)';
     const orientationClass = this.activeOrientation;
     const isTop = orientationClass.startsWith('top');
     const rowClass = isTop ? 'top-row' : 'bottom-row';
 
     return html`
-      <div class="elbow-container ${orientationClass}" style="--elbow-color: ${bgColor};">
+      <div
+        class="elbow-container ${orientationClass}"
+        style="--elbow-color: ${bgColor}; --elbow-text-default: ${defaultText};"
+      >
         <div class="${rowClass}">
           <div class="arch">
             <slot name="label">

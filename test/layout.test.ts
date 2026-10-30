@@ -770,6 +770,146 @@ describe('elbow slotted content', () => {
       expect(r.own).toBe('rgb(1, 2, 3)');
     }
   );
+
+  // Renders an elbow with both properties set, then swaps in slotted text, and
+  // reports every text colour next to what the two on-accent tokens compute to.
+  const elbowText = (attrs: Record<string, string>, elbowStyle = '') =>
+    page.evaluate(
+      async ({ attrs, elbowStyle }) => {
+        const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        for (const [name, value] of Object.entries(attrs)) elbow.setAttribute(name, value);
+        elbow.setAttribute('heading', 'HEADING');
+        elbow.setAttribute('label', 'LABEL');
+        elbow.style.cssText = elbowStyle;
+        const probe = document.createElement('span');
+        document.body.append(elbow, probe);
+        try {
+          await elbow.updateComplete;
+          const colorOf = (el: Element) => getComputedStyle(el).color;
+          const tokenColor = (token: string) => {
+            probe.style.color = `var(${token})`;
+            return colorOf(probe);
+          };
+          const label = colorOf(elbow.shadowRoot!.querySelector('.label-text')!);
+          const heading = colorOf(elbow.shadowRoot!.querySelector('.title-text')!);
+          elbow.innerHTML = `
+            <span slot="label">LABEL</span>
+            <span>HEADING</span>
+            <span slot="label" style="color: rgb(9, 8, 7)">OWN</span>`;
+          const [slottedLabel, slottedHeading, own] = Array.from(elbow.children);
+          return {
+            texts: [label, heading, colorOf(slottedLabel), colorOf(slottedHeading)],
+            own: colorOf(own),
+            onAccent: tokenColor('--lcars-color-on-accent'),
+            inverse: tokenColor('--lcars-color-on-accent-inverse'),
+          };
+        } finally {
+          elbow.remove();
+          probe.remove();
+        }
+      },
+      { attrs, elbowStyle }
+    );
+
+  it.each<Record<string, string>>([
+    {},
+    { color: 'deep-teal' },
+    { color: 'gold' },
+    { color: 'rgb(5, 5, 5)' },
+  ])(
+    'uses on-accent text by default (%o)',
+    async (attrs) => {
+      const r = await elbowText(attrs);
+      expect(new Set(r.texts)).toEqual(new Set([r.onAccent]));
+    }
+  );
+
+  it.each([
+    'surface',
+    'dark-blue',
+    'red',
+    'alert-red',
+    '--lcars-color-surface',
+    '--lcars-color-bg',
+    '--lcars-tng-black',
+    '--lcars-nemesis-slate',
+    '--lcars-contrast-black',
+  ])(
+    'uses inverse text on the dark colour %s',
+    async (color) => {
+      const r = await elbowText({ color });
+      expect(new Set(r.texts)).toEqual(new Set([r.inverse]));
+    }
+  );
+
+  it.each([undefined, 'surface'])(
+    'lets --lcars-elbow-text set all text, and a slotted colour still wins (color: %s)',
+    async (color) => {
+      const r = await elbowText(color ? { color } : {}, '--lcars-elbow-text: rgb(1, 2, 3)');
+      expect(new Set(r.texts)).toEqual(new Set(['rgb(1, 2, 3)']));
+      expect(r.own).toBe('rgb(9, 8, 7)');
+    }
+  );
+
+  // `alert` and `accent` change with the theme, which the elbow cannot see. These
+  // are the only colours allowed under 4.5:1, and the README names them.
+  it.each([
+    ['tng', ['alert']],
+    ['ds9', ['accent', 'alert']],
+    ['nemesis', []],
+    ['contrast', []],
+  ])(
+    'keeps text above 4.5:1 on every named colour in the %s theme, except %j',
+    async (theme, knownGaps) => {
+      const below = await page.evaluate(async (theme) => {
+        const luminance = (rgb: string) => {
+          const [r, g, b] = rgb
+            .match(/\d+(\.\d+)?/g)!
+            .slice(0, 3)
+            .map((c) => {
+              const v = Number(c) / 255;
+              return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+            });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('data-lcars-theme', theme);
+        document.body.appendChild(wrapper);
+        try {
+          const out: string[] = [];
+          for (const color of [
+            'accent', 'alert', 'info', 'primary', 'secondary', 'surface', 'warning',
+            'butterscotch', 'gold', 'tan', 'lilac', 'violet', 'red',
+            'ice-blue', 'dark-blue', 'magenta', 'light-purple', 'amber', 'alert-red',
+            'teal', 'deep-teal', 'nemesis-gold', 'light-cyan', 'nemesis-alert-red',
+            'cyan', 'green', 'contrast-amber', 'contrast-white',
+            '--lcars-color-bg', '--lcars-tng-black', '--lcars-nemesis-slate', '--lcars-contrast-black',
+          ]) {
+            const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+              updateComplete: Promise<unknown>;
+            };
+            elbow.setAttribute('color', color);
+            elbow.setAttribute('label', 'LABEL');
+            wrapper.appendChild(elbow);
+            await elbow.updateComplete;
+            const surface = elbow.shadowRoot!.querySelector('.arch')!;
+            const text = getComputedStyle(surface.querySelector('.label-text')!).color;
+            const [a, b] = [
+              luminance(text),
+              luminance(getComputedStyle(surface).backgroundColor),
+            ].sort((x, y) => y - x);
+            if ((a + 0.05) / (b + 0.05) < 4.5) out.push(color);
+          }
+          return out;
+        } finally {
+          wrapper.remove();
+        }
+      }, theme);
+      expect(below).toEqual(knownGaps);
+    }
+  );
 });
 
 describe('heading clip boxes', () => {
