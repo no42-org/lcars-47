@@ -146,6 +146,16 @@ describe('CSS Design Token Source Verification', () => {
     expect(geometryCss).toContain('--lcars-touch-target-min-width: 80px;');
   });
 
+  it('defines interaction state tokens and imports them', () => {
+    const interactionCss = readFileSync(resolve(__dirname, '../src/tokens/interaction.css'), 'utf8');
+    expect(interactionCss).toContain('--lcars-hover-brightness: 1.2;');
+    expect(interactionCss).toContain('--lcars-active-brightness: 1.4;');
+    expect(interactionCss).toContain('--lcars-active-scale: 0.98;');
+    expect(readFileSync(resolve(__dirname, '../src/tokens/index.css'), 'utf8')).toContain(
+      "@import './interaction.css';"
+    );
+  });
+
   it('wires theme attribute selectors in themes.css', () => {
     expect(themesCss).toContain('[data-lcars-theme="tng"]');
     expect(themesCss).toContain('[data-lcars-theme="ds9"]');

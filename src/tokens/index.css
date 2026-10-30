@@ -8,6 +8,7 @@
 @import './colors.css';
 @import './typography.css';
 @import './geometry.css';
+@import './interaction.css';
 @import './themes.css';
 
 @layer reset {
