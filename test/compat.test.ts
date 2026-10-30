@@ -174,7 +174,8 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     // Font metrics are the category engines disagree on, and the descriptors
     // that balance them are ignored silently where unsupported. The baseline
     // comes from an empty inline-block, which sits on it; canvas gives the cap
-    // height, because no DOM box measures ink.
+    // height, because no DOM box measures ink. Mirrored for real Safari in
+    // scripts/measure-safari-centering.mjs; change the two together.
     const p = await openWorkbench();
     try {
       const r = await p.evaluate(async () => {

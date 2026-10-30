@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify verify-pins dev clean distclean
+.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify verify-pins check-safari dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -66,6 +66,14 @@ verify: typecheck build test test-layout site ## Full gate: types, build, tests,
 # in the Lint workflows job. Node builtins only, so that job stays install-free.
 verify-pins: ## Check that action pins and the images passed to them agree
 	node scripts/verify-action-pins.mjs
+
+# Deliberately outside verify and CI: it drives real Safari, which needs a Mac
+# with Remote Automation on, and for SAFARI_PLATFORM=iOS a connected phone. Node
+# builtins only, so no node_modules prerequisite. Measures the deployed demo by
+# default; set SAFARI_URL to measure elsewhere, using an address the phone can
+# reach for iOS, since localhost there is the phone.
+check-safari: ## Measure Antonio centering in real Safari (SAFARI_PLATFORM=mac|iOS)
+	node scripts/measure-safari-centering.mjs
 
 release-build: verify ## Assemble signed-release inputs into release/
 	rm -rf release && mkdir -p release
