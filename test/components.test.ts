@@ -335,6 +335,46 @@ describe('LCARS Geometric Framework Components', () => {
       });
     });
 
+    it('clears the keyboard press and the Space arm when removed during a hold', async () => {
+      const button = document.createElement('lcars-button') as LcarsButton;
+      document.body.appendChild(button);
+      await button.updateComplete;
+      const inner = () => button.shadowRoot!.querySelector('.button-inner')!;
+      const clicks = vi.fn();
+      button.addEventListener('lcars-click', clicks);
+
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      await button.updateComplete;
+      expect(inner().classList.contains('pressed')).toBe(true);
+
+      button.remove();
+      document.body.appendChild(button);
+      await button.updateComplete;
+      expect(inner().classList.contains('pressed')).toBe(false);
+
+      button.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      expect(clicks).not.toHaveBeenCalled();
+      button.remove();
+    });
+
+    // macOS sends no keyup for a key released while Command is down.
+    it('clears the keyboard press when Meta is released', async () => {
+      const button = document.createElement('lcars-button') as LcarsButton;
+      button.sound = 'none';
+      document.body.appendChild(button);
+      await button.updateComplete;
+      const inner = () => button.shadowRoot!.querySelector('.button-inner')!;
+
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await button.updateComplete;
+      expect(inner().classList.contains('pressed')).toBe(true);
+
+      button.dispatchEvent(new KeyboardEvent('keyup', { key: 'Meta', bubbles: true }));
+      await button.updateComplete;
+      expect(inner().classList.contains('pressed')).toBe(false);
+      button.remove();
+    });
+
     it('dispatches lcars-click on Enter keydown and Space keyup without auto-repeating', async () => {
       const button = document.createElement('lcars-button') as LcarsButton;
       document.body.appendChild(button);
