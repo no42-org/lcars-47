@@ -1932,3 +1932,27 @@ describe('lcars-table', () => {
     }
   });
 });
+
+describe('bundled font metrics', () => {
+  it.each(['antonio-latin-var', 'antonio-latin-ext-var'])(
+    'balances capitals in the %s file itself',
+    async (file) => {
+      // Read per file, through FontFace, so no stylesheet can stand in for the
+      // file: Safari drops ascent-override, and a font update loses this edit.
+      const r = await page.evaluate(async (file) => {
+        const face = new FontFace(`Metrics-${file}`, `url(/src/tokens/fonts/${file}.woff2)`, {
+          weight: '100 700',
+        });
+        document.fonts.add(await face.load());
+        const context = document.createElement('canvas').getContext('2d')!;
+        // At 2048px, the font's em, one pixel is one font unit.
+        context.font = `700 2048px "Metrics-${file}"`;
+        const metrics = context.measureText('H');
+        document.fonts.delete(face);
+        return { ascent: metrics.fontBoundingBoxAscent, descent: metrics.fontBoundingBoxDescent };
+      }, file);
+      expect(Math.abs(r.ascent - 2205)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+      expect(Math.abs(r.descent - 445)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+    }
+  );
+});
