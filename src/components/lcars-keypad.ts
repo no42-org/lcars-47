@@ -147,12 +147,12 @@ export class LcarsKeypad extends LcarsElement {
     }
 
     .key:hover:not(:disabled) {
-      filter: brightness(1.2);
+      filter: brightness(var(--lcars-hover-brightness, 1.2));
     }
 
     .key:active:not(:disabled) {
-      filter: brightness(1.4);
-      transform: scale(0.98);
+      filter: brightness(var(--lcars-active-brightness, 1.4));
+      transform: scale(var(--lcars-active-scale, 0.98));
     }
 
     .key:disabled {

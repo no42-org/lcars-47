@@ -1,0 +1,14 @@
+/*
+ * Copyright 2026 Ronny Trommer <ronny@no42.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+@layer tokens {
+  :root {
+    /* Tactile States. Bare numbers: read them as
+       filter: brightness(var(--lcars-hover-brightness)) */
+    --lcars-hover-brightness: 1.2;
+    --lcars-active-brightness: 1.4;
+    --lcars-active-scale: 0.98;
+  }
+}

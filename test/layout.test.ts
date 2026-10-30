@@ -29,7 +29,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { type ViteDevServer } from 'vite';
-import { chromium, type Browser, type Page } from 'playwright';
+import { chromium, type Browser, type Locator, type Page } from 'playwright';
 import {
   SUBPIXEL_TOLERANCE_PX,
   SAME_WIDTH_READOUT_VALUES,
@@ -807,5 +807,62 @@ describe('heading clip boxes', () => {
       { tag, attribute, selector }
     );
     expect(r.inkTop).toBeGreaterThanOrEqual(r.clipTop);
+  });
+});
+
+describe('interaction state tokens', () => {
+  const CONTROLS = [
+    ['lcars-button', 'lcars-button .button-inner'],
+    ['lcars-keypad key', 'lcars-keypad .key'],
+  ];
+
+  const computed = (target: Locator, property: 'filter' | 'transform') =>
+    target.evaluate((el, property) => getComputedStyle(el)[property], property);
+
+  /** Hovers, then presses, asserting each state once its transition has settled. */
+  async function expectStates(
+    p: Page,
+    selector: string,
+    states: { hover: string; active: string; transform: string }
+  ) {
+    const target = p.locator(selector).first();
+    await target.hover();
+    await expect.poll(() => computed(target, 'filter')).toBe(states.hover);
+    await p.mouse.down();
+    await expect.poll(() => computed(target, 'filter')).toBe(states.active);
+    await expect.poll(() => computed(target, 'transform')).toBe(states.transform);
+    await p.mouse.up();
+  }
+
+  it.each(CONTROLS)('keeps the default hover and pressed states on %s', async (_, selector) => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await expectStates(p, selector, {
+        hover: 'brightness(1.2)',
+        active: 'brightness(1.4)',
+        transform: 'matrix(0.98, 0, 0, 0.98, 0, 0)',
+      });
+    } finally {
+      await p.close();
+    }
+  });
+
+  it.each(CONTROLS)('reads every state from its token on %s', async (_, selector) => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await p.evaluate(() => {
+        const root = document.documentElement.style;
+        root.setProperty('--lcars-hover-brightness', '1.5');
+        root.setProperty('--lcars-active-brightness', '1.7');
+        root.setProperty('--lcars-active-scale', '0.9');
+      });
+      await expectStates(p, selector, {
+        hover: 'brightness(1.5)',
+        active: 'brightness(1.7)',
+        transform: 'matrix(0.9, 0, 0, 0.9, 0, 0)',
+      });
+    } finally {
+      await p.close();
+    }
   });
 });

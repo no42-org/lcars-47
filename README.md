@@ -123,6 +123,17 @@ setLcarsTheme('ds9'); // 'tng' | 'ds9' | 'nemesis' | 'contrast'
 | `nemesis` | Late 24th-century Sovereign-class | Teal Cyan (`#00ccff`), Pale Blue (`#88aacc`), Warm Gold (`#ddaa44`) |
 | `contrast` | High-contrast tactical mode | Vivid Amber (`#ffaa00`), Pure Cyan (`#33d6ff`), Green (`#00cc66`) |
 
+### Interaction tokens
+
+`<lcars-button>` and `<lcars-keypad>` read their hover and pressed states from tokens.
+Read the same tokens in a custom control so it matches them, or set them to change every control on the page.
+
+| Token | Default | Use |
+| :--- | :--- | :--- |
+| `--lcars-hover-brightness` | `1.2` | `filter: brightness(var(--lcars-hover-brightness))` |
+| `--lcars-active-brightness` | `1.4` | `filter: brightness(var(--lcars-active-brightness))` |
+| `--lcars-active-scale` | `0.98` | `transform: scale(var(--lcars-active-scale))` |
+
 ---
 
 ## Component Reference

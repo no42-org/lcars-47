@@ -94,6 +94,7 @@ describe('LCARS Distribution Package Contracts', () => {
 
     it('emits design tokens into the standalone stylesheet', () => {
       expect(distFile('lcars.css')).toContain('--lcars-color-primary');
+      expect(distFile('lcars.css')).toContain('--lcars-hover-brightness');
     });
   });
 });

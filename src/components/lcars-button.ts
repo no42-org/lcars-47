@@ -83,13 +83,13 @@ export class LcarsButton extends LcarsElement {
 
     /* Tactile Interaction States */
     :host(:hover:not([disabled])) .button-inner {
-      filter: brightness(1.2);
+      filter: brightness(var(--lcars-hover-brightness, 1.2));
     }
 
     :host(:active:not([disabled])) .button-inner,
     .button-inner.active {
-      filter: brightness(1.4);
-      transform: scale(0.98);
+      filter: brightness(var(--lcars-active-brightness, 1.4));
+      transform: scale(var(--lcars-active-scale, 0.98));
     }
 
     :host(:focus-visible) {
