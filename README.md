@@ -22,7 +22,7 @@ The workbench above is `index.html` in this repository, recorded live.
 - **Web Components**: Built on pure Lit Web Components (`Custom Elements v1` + `Shadow DOM`).
 - **Zero-Asset Procedural Audio**: Mathematical waveform synthesis for classic interface sound effects with zero `.mp3` or `.wav` dependencies.
 - **Era Color Palettes**: Switch instantly between `TNG` (The Next Generation), `DS9` (Deep Space Nine), `Nemesis` (Late 24th Century), and `High-Contrast` accessibility themes.
-- **Geometric Primitives**: Authentic curved elbows (`<lcars-elbow>`), responsive 2D grid layouts (`<lcars-frame>`), tactile pill buttons (`<lcars-button>`), filter chips (`<lcars-chip>`), and framed panels (`<lcars-panel>`).
+- **Geometric Primitives**: Authentic curved elbows (`<lcars-elbow>`), responsive 2D grid layouts (`<lcars-frame>`), tactile pill buttons (`<lcars-button>`), filter chips (`<lcars-chip>`), data tables (`<lcars-table>`), and framed panels (`<lcars-panel>`).
 - **Telemetry & Data Displays**: High-precision tabular readouts (`<lcars-readout>`), segmented/continuous level gauges (`<lcars-bargraph>`), and status pills (`<lcars-status-pill>`). Lit batches property changes into a single render per microtask.
 - **Tactile Command Input**: An LCARS keypad grid (`<lcars-keypad>`) emitting typed `lcars-change` and `lcars-submit` events, fully operable from a physical keyboard.
 - **Self-Contained Typography**: Bundled local `@font-face` definitions for Antonio condensed sans-serif with zero remote CDN calls.
@@ -238,6 +238,26 @@ Compact pressable value for filters and table rows, with an optional remove cont
 - **Slots**: default (falls back to `label`).
 
 `lcars-remove` only reports. Remove the chip from your own list in response.
+
+### `<lcars-table>`
+Data table with sortable headers, scrolling horizontally inside its own box. The table owns sorting: give it the data and it reorders rows itself.
+- **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`.
+- **Column**: `key`, `label`, `sortable`, `align` (`'start' | 'center' | 'end'`), `mono`, `render(row)` (returns a string, a DOM node or a Lit template).
+- **Events**: `lcars-sort` (CustomEvent with `{ key, direction }`). It bubbles and crosses shadow boundaries.
+
+```typescript
+const table = document.querySelector('lcars-table');
+table.columns = [
+  { key: 'name', label: 'Vessel', sortable: true },
+  { key: 'warp', label: 'Warp', sortable: true, align: 'end', mono: true },
+];
+table.rows = [{ name: 'Enterprise', warp: 9.6 }, { name: 'Defiant', warp: 9.5 }];
+```
+
+Assign a new `rows` array to update the table. Changes made in place are not seen.
+Numbers sort numerically and other values as text in numeric order. Dates sort by time. Empty values (`null`, `undefined`, `''`, `NaN`) sort last in both directions.
+Cells do not wrap, so wide content scrolls.
+`render` runs on every update. A Lit template updates in place and keeps focus; a new DOM node replaces the old one and loses it.
 
 ### `<lcars-keypad>`
 Authentic LCARS key grid for numeric codes and command sequences, with per-keypress procedural audio.

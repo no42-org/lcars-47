@@ -80,6 +80,38 @@ export async function openWorkbenchPage(
 }
 
 /**
+ * A table too wide for its page, appended to the document. Reports whether the
+ * table scrolls inside its own box and whether the page scrolls sideways.
+ */
+export async function measureWideTable(page: Page): Promise<{
+  pageGrew: boolean;
+  scrollsInside: boolean;
+}> {
+  return page.evaluate(async () => {
+    const pageWidth = () => document.documentElement.scrollWidth;
+    const before = pageWidth();
+    const table = document.createElement('lcars-table') as HTMLElement & {
+      columns: unknown[];
+      rows: unknown[];
+      updateComplete: Promise<unknown>;
+    };
+    table.columns = Array.from({ length: 12 }, (_, i) => ({ key: `c${i}`, label: `COLUMN ${i}` }));
+    table.rows = [Object.fromEntries(table.columns.map((_, i) => [`c${i}`, 'WIDE CELL CONTENT']))];
+    document.body.appendChild(table);
+    try {
+      await table.updateComplete;
+      const scroll = table.shadowRoot!.querySelector('.scroll')!;
+      return {
+        pageGrew: pageWidth() > before,
+        scrollsInside: scroll.scrollWidth > scroll.clientWidth,
+      };
+    } finally {
+      table.remove();
+    }
+  });
+}
+
+/**
  * Containment, asserted by hit-testing rather than by arithmetic.
  *
  * A scrolled element reports content rectangles far outside its own box while

@@ -332,6 +332,10 @@
               </div>
             </div>
           </lcars-panel>
+
+          <lcars-panel heading="SENSOR CONTACTS" subtitle="LONG RANGE SCAN">
+            <lcars-table id="table-contacts" label="Sensor contacts"></lcars-table>
+          </lcars-panel>
         </div>
 
         <!-- Footer Elements -->
@@ -444,6 +448,18 @@
 
       // Telemetry Simulation Loop
       let simRunning = true;
+      const contacts = document.getElementById('table-contacts');
+      contacts.columns = [
+        { key: 'id', label: 'Contact', sortable: true, mono: true },
+        { key: 'name', label: 'Vessel', sortable: true },
+        { key: 'range', label: 'Range (LY)', sortable: true, align: 'end' },
+      ];
+      contacts.rows = [
+        { id: 'NCC-1701-D', name: 'Enterprise', range: 4.2 },
+        { id: 'NCC-74656', name: 'Voyager', range: 70000 },
+        { id: 'NX-74205', name: 'Defiant', range: 12.5 },
+      ];
+
       const simBtn = document.getElementById('btn-sim');
       simBtn?.addEventListener('lcars-click', () => {
         simRunning = !simRunning;

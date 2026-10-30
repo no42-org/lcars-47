@@ -28,6 +28,14 @@ import {
   type LcarsToggleEventDetail,
   type LcarsRemoveEventDetail,
 } from './components/lcars-chip';
+import {
+  LcarsTable,
+  type LcarsTableColumn,
+  type LcarsTableRow,
+  type LcarsTableAlign,
+  type LcarsTableSortDirection,
+  type LcarsSortEventDetail,
+} from './components/lcars-table';
 
 // Export Themes & Utilities
 export {
@@ -83,6 +91,12 @@ export {
   LcarsChip,
   type LcarsToggleEventDetail,
   type LcarsRemoveEventDetail,
+  LcarsTable,
+  type LcarsTableColumn,
+  type LcarsTableRow,
+  type LcarsTableAlign,
+  type LcarsTableSortDirection,
+  type LcarsSortEventDetail,
 };
 
 // Register custom elements, guarded so a second evaluation of the module
@@ -102,3 +116,4 @@ define('lcars-bargraph', LcarsBargraph);
 define('lcars-status-pill', LcarsStatusPill);
 define('lcars-keypad', LcarsKeypad);
 define('lcars-chip', LcarsChip);
+define('lcars-table', LcarsTable);
