@@ -1006,6 +1006,232 @@ describe('interaction state tokens', () => {
       await p.close();
     }
   });
+
+  describe('lcars-button states', () => {
+    const PRESSED = { filter: 'brightness(1.4)', transform: 'matrix(0.98, 0, 0, 0.98, 0, 0)' };
+    const FLAT = { filter: 'brightness(1.4)', transform: 'none' };
+    const REST = { filter: 'none', transform: 'none' };
+
+    /** A workbench page with one fixed button whose clicks land in `window.buttonClicks`. */
+    async function openButton(attributes = ''): Promise<{ p: Page; inner: Locator; host: Locator }> {
+      const p = await openWorkbench(VIEWPORT);
+      await p.evaluate(async (attributes) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'button-test';
+        wrapper.style.cssText = 'position: fixed; top: 100px; left: 100px; z-index: 9999';
+        wrapper.innerHTML = `<lcars-button sound="none" ${attributes}>A</lcars-button>`;
+        document.body.appendChild(wrapper);
+        const button = wrapper.firstElementChild as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        const state = window as unknown as { buttonClicks: number };
+        state.buttonClicks = 0;
+        button.addEventListener('lcars-click', () => (state.buttonClicks += 1));
+        await button.updateComplete;
+      }, attributes);
+      const host = p.locator('#button-test lcars-button');
+      return { p, host, inner: host.locator('.button-inner') };
+    }
+
+    const expectLook = async (inner: Locator, look: { filter: string; transform: string }) => {
+      await expect.poll(() => computed(inner, 'filter')).toBe(look.filter);
+      await expect.poll(() => computed(inner, 'transform')).toBe(look.transform);
+    };
+
+    const clicks = (p: Page) =>
+      p.evaluate(() => (window as unknown as { buttonClicks: number }).buttonClicks);
+
+    it('keeps active brightness while an active button is hovered', async () => {
+      const { p, host, inner } = await openButton('active');
+      try {
+        await expectLook(inner, PRESSED);
+        await host.hover();
+        // Past the transition, so a dip towards hover brightness would show.
+        await p.waitForFunction(
+          (el) => el!.getAnimations().length === 0,
+          await inner.elementHandle()
+        );
+        await expectLook(inner, PRESSED);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('drops the transition and the scale under reduced motion', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        expect(await inner.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s');
+        await host.hover();
+        await p.mouse.down();
+        await expectLook(inner, FLAT);
+        await p.mouse.up();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('drops the latched scale under reduced motion', async () => {
+      const { p, inner } = await openButton('active');
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await expectLook(inner, FLAT);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('drops the %s press scale under reduced motion', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, FLAT);
+        await p.keyboard.up(key);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('shows the pressed state while %s is held', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, PRESSED);
+        await p.keyboard.down(key); // auto-repeat
+        await expectLook(inner, PRESSED);
+        await p.keyboard.up(key);
+        await expectLook(inner, REST);
+        expect(await clicks(p)).toBe(1);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('shows the keyboard press over hover', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.hover();
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, PRESSED);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('clears the %s press on blur', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, PRESSED);
+        await host.blur();
+        await expectLook(inner, REST);
+        await p.keyboard.up(key);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Meta', 'Control', 'Alt'])('activates but shows no press on a %s chord', async (mod) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(mod);
+        await p.keyboard.down('Enter');
+        await expect.poll(() => clicks(p)).toBe(1);
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+        await p.keyboard.up(mod);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('holds the press until the key that set it is released', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        // No transition, or the first read still sees the old value mid-fade.
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await host.focus();
+        await p.keyboard.down('Space');
+        await expectLook(inner, FLAT);
+        await p.keyboard.press('Enter');
+        await expectLook(inner, FLAT);
+        await p.keyboard.up('Space');
+        await expectLook(inner, REST);
+        expect(await clicks(p)).toBe(2);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('clears a press that came from a slotted control when it loses focus', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => (el.innerHTML = '<a href="#go">GO</a>'));
+        const link = host.locator('a');
+        await link.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, PRESSED);
+        await link.blur();
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('does not stick when the click handler moves focus', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => {
+          const other = document.createElement('button');
+          el.parentElement!.appendChild(other);
+          el.addEventListener('lcars-click', () => other.focus());
+        });
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('does not stick when the click handler disables the button', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => {
+          el.addEventListener('lcars-click', () => el.setAttribute('disabled', ''));
+        });
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+        await host.evaluate((el) => el.removeAttribute('disabled'));
+        await expectLook(inner, REST);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('shows no keyboard press on a disabled button', async () => {
+      const { p, host, inner } = await openButton('disabled');
+      try {
+        await host.evaluate((el: HTMLElement) => el.focus());
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+  });
 });
 
 describe('lcars-chip', () => {

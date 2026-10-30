@@ -4,7 +4,7 @@
  */
 
 import { html, css, type TemplateResult, type PropertyValues } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 import { playLcarsSound } from '../audio/index';
 
@@ -82,11 +82,15 @@ export class LcarsButton extends LcarsElement {
     }
 
     /* Tactile Interaction States */
-    :host(:hover:not([disabled])) .button-inner {
+    :host(:hover:not([disabled], [active])) .button-inner {
       filter: brightness(var(--lcars-hover-brightness, 1.2));
     }
 
+    /* The later rule wins only at equal specificity. The keyboard selector
+       carries the host guard to reach it; the latched one is too weak, so the
+       hover rule above excludes [active] instead. */
     :host(:active:not([disabled])) .button-inner,
+    :host(:not([disabled])) .button-inner.pressed,
     .button-inner.active {
       filter: brightness(var(--lcars-active-brightness, 1.4));
       transform: scale(var(--lcars-active-scale, 0.98));
@@ -118,6 +122,18 @@ export class LcarsButton extends LcarsElement {
     :host([shape='bracket']:focus-visible) {
       border-radius: var(--lcars-radius-sm, 6px);
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .button-inner {
+        transition: none;
+      }
+
+      :host(:active:not([disabled])) .button-inner,
+      :host(:not([disabled])) .button-inner.pressed,
+      .button-inner.active {
+        transform: none;
+      }
+    }
   `;
 
   @property({ type: String, reflect: true })
@@ -139,14 +155,17 @@ export class LcarsButton extends LcarsElement {
 
   private spaceArmed = false;
 
+  /** The held key shown as pressed. A custom element never matches `:active` for a key. */
+  @state()
+  private pressedKey: string | null = null;
+
   constructor() {
     super();
     this.addEventListener('click', this.handleClick.bind(this));
     this.addEventListener('keydown', this.handleKeyDown.bind(this));
     this.addEventListener('keyup', this.handleKeyUp.bind(this));
-    this.addEventListener('blur', () => {
-      this.spaceArmed = false;
-    });
+    // focusout, not blur: a slotted control's key events reach the host too.
+    this.addEventListener('focusout', this.clearKeyState.bind(this));
   }
 
   override connectedCallback(): void {
@@ -162,6 +181,12 @@ export class LcarsButton extends LcarsElement {
     this.updateTabIndex();
   }
 
+  // A click handler may remove the button mid-press, so no keyup reaches it.
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.clearKeyState();
+  }
+
   override updated(changedProperties: PropertyValues<this>): void {
     super.updated(changedProperties);
     if (changedProperties.has('disabled')) {
@@ -171,6 +196,11 @@ export class LcarsButton extends LcarsElement {
     if (changedProperties.has('active') && (this.active || this.hasAttribute('aria-pressed'))) {
       this.setAttribute('aria-pressed', String(this.active));
     }
+  }
+
+  private clearKeyState(): void {
+    this.spaceArmed = false;
+    this.pressedKey = null;
   }
 
   private get safeShape(): LcarsButtonShape {
@@ -214,6 +244,13 @@ export class LcarsButton extends LcarsElement {
       return;
     }
 
+    // No press for a chord: macOS sends no keyup for a key released under Command.
+    const chord = event.metaKey || event.ctrlKey || event.altKey;
+    if ((event.key === 'Enter' || event.key === ' ') && !chord) {
+      // Before click(): a handler that moves focus clears this through focusout.
+      this.pressedKey ??= event.key;
+    }
+
     if (event.key === 'Enter') {
       event.preventDefault();
       this.click();
@@ -225,6 +262,10 @@ export class LcarsButton extends LcarsElement {
   }
 
   private handleKeyUp(event: KeyboardEvent): void {
+    // Meta too: Command pressed mid-hold swallows the held key's keyup.
+    if (event.key === this.pressedKey || event.key === 'Meta') {
+      this.pressedKey = null;
+    }
     if (event.key !== ' ') {
       return;
     }
@@ -241,12 +282,13 @@ export class LcarsButton extends LcarsElement {
     const bgColor = this.resolveColor(this.color, '--lcars-color-primary');
     const shapeClass = `shape-${this.safeShape}`;
     const activeClass = this.active ? 'active' : '';
+    const pressedClass = this.pressedKey ? 'pressed' : '';
 
     const isBracket = this.safeShape === 'bracket';
     const styleString = isBracket ? `color: ${bgColor};` : `background-color: ${bgColor};`;
 
     return html`
-      <div class="button-inner ${shapeClass} ${activeClass}" style="${styleString}">
+      <div class="button-inner ${shapeClass} ${activeClass} ${pressedClass}" style="${styleString}">
         <slot></slot>
       </div>
     `;
