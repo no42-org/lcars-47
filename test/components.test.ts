@@ -11,6 +11,7 @@ import { LcarsElbow } from '../src/components/lcars-elbow';
 import { LcarsPanel } from '../src/components/lcars-panel';
 import { LcarsFrame } from '../src/components/lcars-frame';
 import { LcarsChip } from '../src/components/lcars-chip';
+import { LcarsTable, type LcarsTableColumn } from '../src/components/lcars-table';
 
 describe('LCARS Geometric Framework Components', () => {
   beforeEach(() => {
@@ -82,6 +83,143 @@ describe('LCARS Geometric Framework Components', () => {
       const chip = await makeChip({ removable: '', disabled: '' });
       expect(toggleOf(chip).disabled).toBe(true);
       expect(removeOf(chip).disabled).toBe(true);
+    });
+  });
+
+  describe('<lcars-table>', () => {
+    const columns: LcarsTableColumn[] = [
+      { key: 'name', label: 'Vessel', sortable: true },
+      { key: 'warp', label: 'Warp', sortable: true },
+      { key: 'note', label: 'Note' },
+    ];
+    const rows = [
+      { name: 'Voyager', warp: 9.975, note: 'A' },
+      { name: 'Defiant', warp: 9.5, note: 'B' },
+      { name: 'Runabout', warp: null, note: 'C' },
+      { name: 'Enterprise', warp: 10, note: 'D' },
+    ];
+
+    async function makeTable(): Promise<LcarsTable> {
+      const table = document.createElement('lcars-table') as LcarsTable;
+      table.columns = columns;
+      table.rows = rows;
+      document.body.appendChild(table);
+      await table.updateComplete;
+      return table;
+    }
+    const headerOf = (table: LcarsTable, index: number) =>
+      table.shadowRoot?.querySelectorAll('th')[index] as HTMLElement;
+    const sortBy = async (table: LcarsTable, index: number) => {
+      headerOf(table, index).querySelector('button')?.click();
+      await table.updateComplete;
+    };
+    const column = (table: LcarsTable, index: number) =>
+      Array.from(table.shadowRoot?.querySelectorAll('tbody tr') ?? []).map((row) =>
+        row.querySelectorAll('td')[index].textContent?.trim()
+      );
+
+    it('renders rows in the given order until sorted', async () => {
+      const table = await makeTable();
+      expect(column(table, 0)).toEqual(['Voyager', 'Defiant', 'Runabout', 'Enterprise']);
+      expect(headerOf(table, 0).getAttribute('aria-sort')).toBe('none');
+      expect(headerOf(table, 2).hasAttribute('aria-sort')).toBe(false);
+      expect(headerOf(table, 2).querySelector('button')).toBeNull();
+    });
+
+    it('sorts on activation, reverses on the next, and fires lcars-sort', async () => {
+      const table = await makeTable();
+      const sorted = vi.fn();
+      table.addEventListener('lcars-sort', sorted);
+
+      await sortBy(table, 0);
+      expect(column(table, 0)).toEqual(['Defiant', 'Enterprise', 'Runabout', 'Voyager']);
+      expect(headerOf(table, 0).getAttribute('aria-sort')).toBe('ascending');
+      expect(sorted.mock.calls[0][0].detail).toEqual({ key: 'name', direction: 'ascending' });
+
+      await sortBy(table, 0);
+      expect(column(table, 0)).toEqual(['Voyager', 'Runabout', 'Enterprise', 'Defiant']);
+      expect(headerOf(table, 0).getAttribute('aria-sort')).toBe('descending');
+      expect(sorted).toHaveBeenCalledTimes(2);
+    });
+
+    it('sorts numbers numerically, keeps empty values last, and leaves rows alone', async () => {
+      const table = await makeTable();
+      await sortBy(table, 1);
+      expect(column(table, 1)).toEqual(['9.5', '9.975', '10', '']);
+      await sortBy(table, 1);
+      expect(column(table, 1)).toEqual(['10', '9.975', '9.5', '']);
+      expect(rows[0].name).toBe('Voyager');
+    });
+
+    it('treats NaN and empty strings as empty, and sorts dates by time', async () => {
+      const table = await makeTable();
+      table.columns = [
+        { key: 'v', label: 'V', sortable: true },
+        { key: 'd', label: 'D', sortable: true },
+      ];
+      table.rows = [
+        { v: 3, d: new Date('2026-01-05') },
+        { v: NaN, d: new Date('2026-10-30') },
+        { v: 1, d: new Date('2025-06-01') },
+        { v: '', d: null },
+        { v: 2, d: new Date('2026-03-02') },
+      ];
+      await table.updateComplete;
+      await sortBy(table, 0);
+      expect(column(table, 0).slice(0, 3)).toEqual(['1', '2', '3']);
+
+      await sortBy(table, 1);
+      const years = column(table, 1).map((text) => text?.match(/\d{4}/)?.[0]);
+      expect(years).toEqual(['2025', '2026', '2026', '2026', undefined]);
+      expect(column(table, 0).slice(0, 3)).toEqual(['1', '3', '2']);
+    });
+
+    it('renders a row object that appears twice', async () => {
+      const table = await makeTable();
+      table.rows = [rows[0], rows[1], rows[0]];
+      await table.updateComplete;
+      expect(column(table, 0)).toEqual(['Voyager', 'Defiant', 'Voyager']);
+    });
+
+    it('moves aria-sort to the new column and starts it ascending', async () => {
+      const table = await makeTable();
+      await sortBy(table, 0);
+      await sortBy(table, 0);
+      await sortBy(table, 1);
+      expect(headerOf(table, 0).getAttribute('aria-sort')).toBe('none');
+      expect(headerOf(table, 1).getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('sorts from attributes, and ignores a key that is not sortable', async () => {
+      const table = document.createElement('lcars-table') as LcarsTable;
+      table.setAttribute('sort-key', 'name');
+      table.setAttribute('sort-direction', 'descending');
+      table.columns = columns;
+      table.rows = rows;
+      document.body.appendChild(table);
+      await table.updateComplete;
+      expect(column(table, 0)[0]).toBe('Voyager');
+
+      table.sortKey = 'note';
+      await table.updateComplete;
+      expect(column(table, 0)).toEqual(['Voyager', 'Defiant', 'Runabout', 'Enterprise']);
+    });
+
+    it('renders a DOM node from a column render function', async () => {
+      const table = await makeTable();
+      table.columns = [
+        {
+          key: 'name',
+          label: 'Vessel',
+          render: (row: { name: string }) => {
+            const link = document.createElement('a');
+            link.textContent = row.name;
+            return link;
+          },
+        },
+      ];
+      await table.updateComplete;
+      expect(table.shadowRoot?.querySelector('td a')?.textContent).toBe('Voyager');
     });
   });
 

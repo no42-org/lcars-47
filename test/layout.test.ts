@@ -37,6 +37,7 @@ import {
   launchBrowser,
   openWorkbenchPage,
   probesFindComponentOutside,
+  measureWideTable,
 } from './browser';
 
 const VIEWPORT = { width: 1440, height: 900 };
@@ -1002,6 +1003,139 @@ describe('lcars-chip', () => {
       const box = (await p.locator('#chip-test .chip-remove').boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(24);
       expect(box.height).toBeGreaterThanOrEqual(24);
+    } finally {
+      await p.close();
+    }
+  });
+});
+
+describe('lcars-table', () => {
+  type TableElement = HTMLElement & {
+    columns: unknown[];
+    rows: unknown[];
+    updateComplete: Promise<unknown>;
+  };
+
+  it('scrolls wide content inside its own box on a 400px page', async () => {
+    const p = await openWorkbench({ width: 400, height: 800 });
+    try {
+      expect(await measureWideTable(p)).toEqual({ pageGrew: false, scrollsInside: true });
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('sorts from the keyboard', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const header = p.locator('#table-contacts th').nth(1);
+      await header.locator('button').focus();
+      await p.keyboard.press('Enter');
+      await expect.poll(() => header.getAttribute('aria-sort')).toBe('ascending');
+      await p.keyboard.press('Space');
+      await expect.poll(() => header.getAttribute('aria-sort')).toBe('descending');
+      expect(await p.locator('#table-contacts tbody tr td:nth-child(2)').first().textContent()).toContain(
+        'Voyager'
+      );
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('shows the whole focus ring of a control in the first column', async () => {
+    // The clip is real only at the scroll box's edge, so the table sits at the
+    // first row with its control hard against the left of the column.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await p.evaluate(async () => {
+        const table = document.createElement('lcars-table') as TableElement;
+        table.id = 'focus-test';
+        table.columns = [
+          {
+            key: 'action',
+            label: 'ACTION',
+            render: () => {
+              const button = document.createElement('lcars-button');
+              button.textContent = 'GO';
+              button.style.cssText = 'margin-inline-start: -8px';
+              return button;
+            },
+          },
+        ];
+        table.rows = [{ action: 'x' }];
+        table.style.cssText = 'position: fixed; top: 100px; left: 100px; z-index: 9999';
+        document.body.appendChild(table);
+        await table.updateComplete;
+      });
+      const button = p.locator('#focus-test lcars-button');
+      await button.focus();
+      const r = await button.evaluate((el) => {
+        const style = getComputedStyle(el);
+        const ring = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+        const box = el.getBoundingClientRect();
+        const scroll = (el.getRootNode() as ShadowRoot).querySelector('.scroll')!;
+        const clip = scroll.getBoundingClientRect();
+        return {
+          style: style.outlineStyle,
+          left: box.left - ring - clip.left,
+          bottom: clip.bottom - (box.bottom + ring),
+        };
+      });
+      expect(r.style).toBe('solid');
+      expect(r.left).toBeGreaterThanOrEqual(0);
+      expect(r.bottom).toBeGreaterThanOrEqual(0);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('aligns cells in different fonts on one baseline', async () => {
+    const baselines = await page.evaluate(async () => {
+      const table = document.createElement('lcars-table') as TableElement;
+      table.columns = [
+        { key: 'a', label: 'A', mono: true },
+        { key: 'b', label: 'B' },
+      ];
+      table.rows = [{ a: 'NCC', b: 'WARP' }];
+      document.body.appendChild(table);
+      try {
+        await table.updateComplete;
+        return Array.from(table.shadowRoot!.querySelectorAll('td')).map((cell) => {
+          const probe = document.createElement('i');
+          probe.style.cssText = 'display: inline-block; width: 0; height: 0';
+          cell.appendChild(probe);
+          return probe.getBoundingClientRect().bottom;
+        });
+      } finally {
+        table.remove();
+      }
+    });
+    expect(baselines).toHaveLength(2);
+    expect(Math.abs(baselines[0] - baselines[1])).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
+
+  it('ignores a held key on a sort header', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const header = p.locator('#table-contacts th').first();
+      await header.locator('button').focus();
+      await p.keyboard.down('Enter');
+      await p.keyboard.down('Enter');
+      await p.keyboard.up('Enter');
+      await expect.poll(() => header.getAttribute('aria-sort')).toBe('ascending');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('brightens a sortable header cell on hover', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const header = p.locator('#table-contacts th').first();
+      await header.hover();
+      await expect
+        .poll(() => header.evaluate((el) => getComputedStyle(el).filter))
+        .toBe('brightness(1.2)');
     } finally {
       await p.close();
     }

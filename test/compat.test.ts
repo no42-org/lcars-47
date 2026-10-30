@@ -32,6 +32,7 @@ import {
   launchBrowser,
   openWorkbenchPage,
   probesFindComponentOutside,
+  measureWideTable,
 } from './browser';
 
 const ENGINES = [
@@ -91,6 +92,15 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
         expect(size.width, `${tag} collapsed to zero width in ${engineName}`).toBeGreaterThan(0);
         expect(size.height, `${tag} collapsed to zero height in ${engineName}`).toBeGreaterThan(0);
       }
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('scrolls a wide table inside its own box', async () => {
+    const p = await openWorkbench({ width: 400, height: 800 });
+    try {
+      expect(await measureWideTable(p)).toEqual({ pageGrew: false, scrollsInside: true });
     } finally {
       await p.close();
     }

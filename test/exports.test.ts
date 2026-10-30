@@ -30,6 +30,7 @@ describe('public barrel exports', () => {
       'LcarsStatusPill',
       'LcarsKeypad',
       'LcarsChip',
+      'LcarsTable',
     ]) {
       expect(lcars, `missing export: ${name}`).toHaveProperty(name);
     }
@@ -50,6 +51,7 @@ describe('public barrel exports', () => {
       'lcars-status-pill',
       'lcars-keypad',
       'lcars-chip',
+      'lcars-table',
     ]) {
       expect(customElements.get(tag), `unregistered element: ${tag}`).toBeDefined();
     }
