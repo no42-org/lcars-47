@@ -106,6 +106,70 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     }
   });
 
+  it('keeps a disabled chip on the focus path and restores it', async () => {
+    // Engines disagree on both halves: what happens to focus on a button that
+    // becomes disabled, and whether a delegatesFocus host with nothing left to
+    // delegate to can take focus (none can: focus lands on the chip's surface).
+    // Both controls start the path, because either can hold focus when disabled.
+    // Inputs as neighbours, because they are Tab stops in every engine.
+    const p = await openWorkbench();
+    try {
+      await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.id = 'chip-compat';
+        box.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999';
+        box.innerHTML =
+          '<input id="chip-before" />' +
+          '<button id="chip-plain"></button>' +
+          '<lcars-chip label="WARP" removable></lcars-chip>' +
+          '<input id="chip-after" />';
+        document.body.prepend(box);
+        await (box.children[2] as HTMLElement & { updateComplete: Promise<unknown> })
+          .updateComplete;
+      });
+      const setDisabled = (disabled: boolean) =>
+        p.evaluate(async (disabled) => {
+          const chip = document.querySelector('#chip-compat lcars-chip') as HTMLElement & {
+            disabled: boolean;
+            updateComplete: Promise<unknown>;
+          };
+          chip.disabled = disabled;
+          await chip.updateComplete;
+        }, disabled);
+      const focused = () =>
+        p.evaluate(() => {
+          const active = document.activeElement!;
+          const inner = active.shadowRoot?.activeElement;
+          return inner?.tagName === 'BUTTON' ? `.${inner.className}` : active.id || active.tagName;
+        });
+
+      await p.locator('#chip-before').focus();
+      await p.keyboard.press('Tab');
+      const buttonsAreTabStops = (await focused()) === 'chip-plain';
+
+      for (const control of ['.chip-toggle', '.chip-remove']) {
+        await p.locator(`#chip-compat ${control}`).focus();
+        await setDisabled(true);
+        expect(await focused(), `${control} lost focus in ${engineName}`).toBe('LCARS-CHIP');
+        await setDisabled(false);
+        expect(await focused(), `re-enable from ${control} in ${engineName}`).toBe('.chip-toggle');
+      }
+
+      await setDisabled(true);
+      await p.keyboard.press('Tab');
+      expect(await focused(), `Tab from a disabled chip in ${engineName}`).toBe('chip-after');
+      await setDisabled(false);
+      await p.keyboard.press('Shift+Tab');
+      // Whether Tab stops on a button depends on the platform: WebKit on macOS
+      // skips them, WebKit on Linux does not. A chip control must do what a
+      // plain button does here.
+      const previous = buttonsAreTabStops ? '.chip-remove' : 'chip-before';
+      expect(await focused(), `Shift+Tab after re-enable in ${engineName}`).toBe(previous);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('centres Antonio capitals in a button label', async () => {
     // Font metrics are the category engines disagree on, and the descriptors
     // that balance them are ignored silently where unsupported. The baseline

@@ -251,6 +251,10 @@ Compact pressable value for filters and table rows, with an optional remove cont
 
 `lcars-remove` only reports. Remove the chip from your own list in response.
 
+`chip.click()` toggles the chip, unless it is disabled.
+Disabling a chip that holds focus leaves focus on the chip, so the next Tab resumes from there.
+Re-enabling it returns focus to the toggle control.
+
 ### `<lcars-table>`
 Data table with sortable headers, scrolling horizontally inside its own box. The table owns sorting: give it the data and it reorders rows itself.
 - **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`.
