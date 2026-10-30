@@ -10,10 +10,79 @@ import { LcarsButton } from '../src/components/lcars-button';
 import { LcarsElbow } from '../src/components/lcars-elbow';
 import { LcarsPanel } from '../src/components/lcars-panel';
 import { LcarsFrame } from '../src/components/lcars-frame';
+import { LcarsChip } from '../src/components/lcars-chip';
 
 describe('LCARS Geometric Framework Components', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+  });
+
+  describe('<lcars-chip>', () => {
+    async function makeChip(attributes: Record<string, string> = {}): Promise<LcarsChip> {
+      const chip = document.createElement('lcars-chip') as LcarsChip;
+      chip.setAttribute('label', 'WARP');
+      for (const [name, value] of Object.entries(attributes)) chip.setAttribute(name, value);
+      document.body.appendChild(chip);
+      await chip.updateComplete;
+      return chip;
+    }
+    const toggleOf = (chip: LcarsChip) =>
+      chip.shadowRoot?.querySelector('.chip-toggle') as HTMLButtonElement;
+    const removeOf = (chip: LcarsChip) =>
+      chip.shadowRoot?.querySelector('.chip-remove') as HTMLButtonElement;
+
+    it('toggles pressed, exposes aria-pressed and fires one event', async () => {
+      const chip = await makeChip();
+      const toggled = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+
+      toggleOf(chip).click();
+      await chip.updateComplete;
+
+      expect(chip.pressed).toBe(true);
+      expect(toggleOf(chip).getAttribute('aria-pressed')).toBe('true');
+      expect(toggled).toHaveBeenCalledTimes(1);
+      expect(toggled.mock.calls[0][0].detail).toEqual({ pressed: true, label: 'WARP' });
+    });
+
+    it('fires remove without toggling, and names the control', async () => {
+      const chip = await makeChip({ removable: '' });
+      const toggled = vi.fn();
+      const removed = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      chip.addEventListener('lcars-remove', removed);
+
+      removeOf(chip).click();
+
+      expect(removed).toHaveBeenCalledTimes(1);
+      expect(toggled).not.toHaveBeenCalled();
+      expect(chip.pressed).toBe(false);
+    });
+
+    it('reports the visible text, preferring slotted content', async () => {
+      const chip = await makeChip({ removable: '' });
+      chip.textContent = ' IMPULSE ';
+      const removed = vi.fn();
+      chip.addEventListener('lcars-remove', removed);
+      removeOf(chip).click();
+      expect(removed.mock.calls[0][0].detail).toEqual({ label: 'IMPULSE' });
+    });
+
+    it('lets remove-label replace the composed name', async () => {
+      const chip = await makeChip({ removable: '', 'remove-label': 'Drop filter' });
+      expect(removeOf(chip).getAttribute('aria-label')).toBe('Drop filter');
+      expect(removeOf(chip).hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('renders no remove control unless removable', async () => {
+      expect(removeOf(await makeChip())).toBeNull();
+    });
+
+    it('disables both controls', async () => {
+      const chip = await makeChip({ removable: '', disabled: '' });
+      expect(toggleOf(chip).disabled).toBe(true);
+      expect(removeOf(chip).disabled).toBe(true);
+    });
   });
 
   describe('<lcars-button>', () => {

@@ -22,7 +22,7 @@ The workbench above is `index.html` in this repository, recorded live.
 - **Web Components**: Built on pure Lit Web Components (`Custom Elements v1` + `Shadow DOM`).
 - **Zero-Asset Procedural Audio**: Mathematical waveform synthesis for classic interface sound effects with zero `.mp3` or `.wav` dependencies.
 - **Era Color Palettes**: Switch instantly between `TNG` (The Next Generation), `DS9` (Deep Space Nine), `Nemesis` (Late 24th Century), and `High-Contrast` accessibility themes.
-- **Geometric Primitives**: Authentic curved elbows (`<lcars-elbow>`), responsive 2D grid layouts (`<lcars-frame>`), tactile pill buttons (`<lcars-button>`), and framed panels (`<lcars-panel>`).
+- **Geometric Primitives**: Authentic curved elbows (`<lcars-elbow>`), responsive 2D grid layouts (`<lcars-frame>`), tactile pill buttons (`<lcars-button>`), filter chips (`<lcars-chip>`), and framed panels (`<lcars-panel>`).
 - **Telemetry & Data Displays**: High-precision tabular readouts (`<lcars-readout>`), segmented/continuous level gauges (`<lcars-bargraph>`), and status pills (`<lcars-status-pill>`). Lit batches property changes into a single render per microtask.
 - **Tactile Command Input**: An LCARS keypad grid (`<lcars-keypad>`) emitting typed `lcars-change` and `lcars-submit` events, fully operable from a physical keyboard.
 - **Self-Contained Typography**: Bundled local `@font-face` definitions for Antonio condensed sans-serif with zero remote CDN calls.
@@ -230,6 +230,14 @@ Segmented or continuous level meter with dynamic threshold color transitions. Se
 ### `<lcars-status-pill>`
 Diagnostic system state indicator with optional CSS pulse animations.
 - **Properties**: `status` (`'nominal' | 'warning' | 'alert' | 'offline' | 'standby'`), `label`, `code`, `blink`, `color`.
+
+### `<lcars-chip>`
+Compact pressable value for filters and table rows, with an optional remove control. Hover and pressed states match `<lcars-button>` through the interaction tokens.
+- **Properties**: `label`, `pressed`, `removable`, `disabled`, `color`, `remove-label` (replaces the remove control's accessible name, default `Remove` plus the chip's text), `sound` (default `none`; a filter row is used in bursts, so sound is opt-in).
+- **Events**: `lcars-toggle` (CustomEvent with `{ pressed, label }`) and `lcars-remove` (CustomEvent with `{ label }`). Both bubble and cross shadow boundaries.
+- **Slots**: default (falls back to `label`).
+
+`lcars-remove` only reports. Remove the chip from your own list in response.
 
 ### `<lcars-keypad>`
 Authentic LCARS key grid for numeric codes and command sequences, with per-keypress procedural audio.

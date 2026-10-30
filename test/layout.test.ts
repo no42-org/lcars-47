@@ -866,3 +866,144 @@ describe('interaction state tokens', () => {
     }
   });
 });
+
+describe('lcars-chip', () => {
+  /** A workbench page with one fixed chip whose events land in `window.chipLog`. */
+  async function openChip(attributes: string): Promise<Page> {
+    const p = await openWorkbench(VIEWPORT);
+    await p.evaluate(async (attributes) => {
+      const host = document.createElement('div');
+      host.id = 'chip-test';
+      host.style.cssText = 'position: fixed; top: 100px; left: 100px; z-index: 9999';
+      host.innerHTML = `<lcars-chip label="WARP" ${attributes}></lcars-chip>`;
+      document.body.appendChild(host);
+      const chip = host.firstElementChild as HTMLElement & { updateComplete: Promise<unknown> };
+      const log: string[] = [];
+      (window as unknown as { chipLog: string[] }).chipLog = log;
+      for (const type of ['lcars-toggle', 'lcars-remove']) {
+        chip.addEventListener(type, () => log.push(type));
+      }
+      await chip.updateComplete;
+    }, attributes);
+    return p;
+  }
+  const chipLog = (p: Page) =>
+    p.evaluate(() => (window as unknown as { chipLog: string[] }).chipLog);
+
+  it.each(['Enter', 'Space'])('toggles once with %s', async (key) => {
+    const p = await openChip('');
+    try {
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.keyboard.press(key);
+      expect(await chipLog(p)).toEqual(['lcars-toggle']);
+      expect(await p.locator('#chip-test .chip-toggle').getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('removes once from the keyboard, without toggling', async () => {
+    const p = await openChip('removable');
+    try {
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.keyboard.press('Tab');
+      await p.keyboard.press('Enter');
+      expect(await chipLog(p)).toEqual(['lcars-remove']);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('brightens on hover like a button, with no ring', async () => {
+    const p = await openChip('');
+    try {
+      const chip = p.locator('#chip-test .chip');
+      await chip.hover();
+      await expect
+        .poll(() => chip.evaluate((el) => getComputedStyle(el).filter))
+        .toBe('brightness(1.2)');
+      const outlines = await p.locator('#chip-test .chip-toggle').evaluate((el) => {
+        const button = getComputedStyle(el);
+        const surface = getComputedStyle(el.parentElement!);
+        return [button.outlineStyle, surface.outlineStyle];
+      });
+      expect(outlines).toEqual(['none', 'none']);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('centres the cross in its control', async () => {
+    const p = await openChip('removable');
+    try {
+      const centre = async (selector: string) => {
+        const box = (await p.locator(selector).boundingBox())!;
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      };
+      const control = await centre('#chip-test .chip-remove');
+      const cross = await centre('#chip-test .chip-cross');
+      expect(Math.abs(control.x - cross.x)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+      expect(Math.abs(control.y - cross.y)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('ignores a held key', async () => {
+    const p = await openChip('');
+    try {
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.keyboard.down('Enter');
+      await p.keyboard.down('Enter');
+      await p.keyboard.down('Enter');
+      await p.keyboard.up('Enter');
+      expect(await chipLog(p)).toEqual(['lcars-toggle']);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('names the remove control from the visible text, which may change', async () => {
+    const p = await openChip('removable');
+    try {
+      await p.evaluate(async () => {
+        const chip = document.querySelector('#chip-test lcars-chip') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        chip.textContent = 'OLD';
+        await chip.updateComplete;
+        (chip.firstChild as Text).data = 'NEW';
+      });
+      await expect
+        .poll(() => p.getByRole('button', { name: 'Remove NEW', exact: true }).count())
+        .toBe(1);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps a pressed chip distinct in forced colours', async () => {
+    const p = await openChip('');
+    try {
+      await p.emulateMedia({ forcedColors: 'active' });
+      const fill = () =>
+        p.locator('#chip-test .chip').evaluate((el) => getComputedStyle(el).backgroundColor);
+      const unpressed = await fill();
+      await p.locator('#chip-test .chip-toggle').click();
+      expect(await fill()).not.toBe(unpressed);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('gives the remove control a full 24px target', async () => {
+    const p = await openChip('removable');
+    try {
+      const box = (await p.locator('#chip-test .chip-remove').boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(24);
+      expect(box.height).toBeGreaterThanOrEqual(24);
+    } finally {
+      await p.close();
+    }
+  });
+});
