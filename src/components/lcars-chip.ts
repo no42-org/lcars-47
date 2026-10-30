@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { html, css, nothing, type TemplateResult } from 'lit';
+import { html, css, nothing, type TemplateResult, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 import { playLcarsSound } from '../audio/index';
@@ -80,7 +80,8 @@ export class LcarsChip extends LcarsElement {
       cursor: pointer;
     }
 
-    button:focus-visible {
+    button:focus-visible,
+    .chip:focus-visible {
       /* Inset and in the text colour: an outset ring would cross the sibling
          control, and on a pressed primary chip it would match the fill. */
       outline: 2px solid currentColor;
@@ -181,6 +182,46 @@ export class LcarsChip extends LcarsElement {
   @property({ type: String })
   sound = 'none';
 
+  private restoreFocus = false;
+
+  /** Forwarded so that scripts activate the chip like a pointer does. */
+  override click(): void {
+    if (this.disabled) {
+      return;
+    }
+    // The rendered button lags the properties: it may not exist yet, or still
+    // carry a `disabled` attribute that was just cleared.
+    this.performUpdate();
+    this.shadowRoot?.querySelector<HTMLButtonElement>('.chip-toggle')?.click();
+  }
+
+  override willUpdate(changedProperties: PropertyValues<this>): void {
+    super.willUpdate(changedProperties);
+
+    // Must run before the render: the element holding focus is about to stop
+    // being focusable, and engines disagree on what happens to focus then.
+    if (changedProperties.has('disabled') && changedProperties.get('disabled') !== this.disabled) {
+      const active = this.shadowRoot?.activeElement as HTMLElement | null | undefined;
+      if (active) {
+        active.blur();
+        this.restoreFocus = true;
+      }
+    }
+  }
+
+  override updated(changedProperties: PropertyValues<this>): void {
+    super.updated(changedProperties);
+
+    // Disabling the focused control would strand a keyboard user at the top of
+    // the document. Delegation lands on the chip surface while disabled and on
+    // the toggle once enabled. Without that surface focus() would do nothing:
+    // no engine lets a delegatesFocus host take focus itself, tabindex or not.
+    if (this.restoreFocus) {
+      this.restoreFocus = false;
+      this.focus({ preventScroll: true });
+    }
+  }
+
   private get displayLabel(): string {
     return (this.textContent ?? '').trim() || this.label;
   }
@@ -225,7 +266,14 @@ export class LcarsChip extends LcarsElement {
     const chipColor = this.resolveColor(this.color, '--lcars-color-primary');
 
     return html`
-      <span class="chip ${this.pressed ? 'pressed' : ''}" style="--chip-color: ${chipColor};">
+      <span
+        class="chip ${this.pressed ? 'pressed' : ''}"
+        style="--chip-color: ${chipColor};"
+        tabindex="${this.disabled ? '-1' : nothing}"
+        role="${this.disabled ? 'group' : nothing}"
+        aria-labelledby="${this.disabled ? 'toggle' : nothing}"
+        aria-disabled="${this.disabled ? 'true' : nothing}"
+      >
         <button
           id="toggle"
           class="chip-toggle"

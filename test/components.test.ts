@@ -84,6 +84,84 @@ describe('LCARS Geometric Framework Components', () => {
       expect(toggleOf(chip).disabled).toBe(true);
       expect(removeOf(chip).disabled).toBe(true);
     });
+
+    it('toggles once from a host click, keeping the native click event', async () => {
+      const chip = await makeChip();
+      const toggled = vi.fn();
+      const clicked = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      chip.addEventListener('click', clicked);
+
+      chip.click();
+
+      expect(chip.pressed).toBe(true);
+      expect(toggled).toHaveBeenCalledTimes(1);
+      expect(clicked).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not fire remove from a host click', async () => {
+      const chip = await makeChip({ removable: '' });
+      const removed = vi.fn();
+      chip.addEventListener('lcars-remove', removed);
+      chip.click();
+      expect(removed).not.toHaveBeenCalled();
+    });
+
+    it('ignores a host click while disabled', async () => {
+      const chip = await makeChip({ disabled: '' });
+      const toggled = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      chip.click();
+      expect(toggled).not.toHaveBeenCalled();
+      expect(chip.pressed).toBe(false);
+    });
+
+    it('ignores a host click in the same task as disabling', async () => {
+      const chip = await makeChip();
+      const toggled = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      chip.disabled = true;
+      chip.click();
+      expect(toggled).not.toHaveBeenCalled();
+      expect(chip.pressed).toBe(false);
+    });
+
+    it('toggles once from a host click before the first render', async () => {
+      const chip = document.createElement('lcars-chip') as LcarsChip;
+      document.body.appendChild(chip);
+      const toggled = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      const clicked = vi.fn();
+      chip.addEventListener('click', clicked);
+      chip.click();
+      expect(chip.pressed).toBe(true);
+      expect(toggled).toHaveBeenCalledTimes(1);
+      expect(clicked).toHaveBeenCalledTimes(1);
+    });
+
+    it('toggles once from a host click in the same task as re-enabling', async () => {
+      const chip = await makeChip({ disabled: '' });
+      const toggled = vi.fn();
+      chip.addEventListener('lcars-toggle', toggled);
+      chip.disabled = false;
+      chip.click();
+      expect(chip.pressed).toBe(true);
+      expect(toggled).toHaveBeenCalledTimes(1);
+    });
+
+    it('describes the focusable surface only while disabled', async () => {
+      const chip = await makeChip({ disabled: '' });
+      const surface = chip.shadowRoot?.querySelector('.chip') as HTMLElement;
+      expect(surface.getAttribute('role')).toBe('group');
+      expect(surface.getAttribute('aria-labelledby')).toBe('toggle');
+      expect(surface.getAttribute('aria-disabled')).toBe('true');
+
+      chip.disabled = false;
+      await chip.updateComplete;
+      for (const name of ['role', 'aria-labelledby', 'aria-disabled', 'tabindex']) {
+        expect(surface.hasAttribute(name)).toBe(false);
+      }
+    });
   });
 
   describe('<lcars-table>', () => {

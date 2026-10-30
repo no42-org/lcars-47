@@ -1281,6 +1281,234 @@ describe('lcars-chip', () => {
     }
   });
 
+  /** Puts a plain button either side of the chip, so Tab has somewhere to go. */
+  const addNeighbours = (p: Page) =>
+    p.evaluate(() => {
+      const chip = document.querySelector('#chip-test lcars-chip')!;
+      for (const [id, position] of [
+        ['chip-before', 'beforebegin'],
+        ['chip-after', 'afterend'],
+      ] as const) {
+        const button = document.createElement('button');
+        button.id = id;
+        chip.insertAdjacentElement(position, button);
+      }
+    });
+  const setDisabled = (p: Page, disabled: boolean) =>
+    p.evaluate(async (disabled) => {
+      const chip = document.querySelector('#chip-test lcars-chip') as HTMLElement & {
+        disabled: boolean;
+        updateComplete: Promise<unknown>;
+      };
+      chip.disabled = disabled;
+      await chip.updateComplete;
+    }, disabled);
+  /** The focused element, reading through the chip's shadow root. */
+  const focused = (p: Page) =>
+    p.evaluate(() => {
+      const active = document.activeElement!;
+      const inner = active.shadowRoot?.activeElement;
+      return inner?.tagName === 'BUTTON' ? `.${inner.className}` : active.id || active.tagName;
+    });
+
+  it('keeps focus on the chip when its own toggle listener disables it', async () => {
+    const p = await openChip('');
+    try {
+      await p.evaluate(() => {
+        const chip = document.querySelector('#chip-test lcars-chip') as HTMLElement & {
+          disabled: boolean;
+        };
+        chip.addEventListener('lcars-toggle', () => {
+          chip.disabled = true;
+        });
+      });
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.keyboard.press('Enter');
+      await expect.poll(() => focused(p)).toBe('LCARS-CHIP');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps focus on the chip when disabled with focus on the remove control', async () => {
+    const p = await openChip('removable');
+    try {
+      await p.locator('#chip-test .chip-remove').focus();
+      await setDisabled(p, true);
+      expect(await focused(p)).toBe('LCARS-CHIP');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it.each([
+    ['Tab', 'chip-after'],
+    ['Shift+Tab', 'chip-before'],
+  ])('resumes %s from a disabled chip', async (key, target) => {
+    const p = await openChip('removable');
+    try {
+      await addNeighbours(p);
+      await p.locator('#chip-test .chip-toggle').focus();
+      await setDisabled(p, true);
+      await p.keyboard.press(key);
+      expect(await focused(p)).toBe(target);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('skips a disabled chip in the tab order', async () => {
+    const p = await openChip('removable disabled');
+    try {
+      await addNeighbours(p);
+      await p.locator('#chip-before').focus();
+      await p.keyboard.press('Tab');
+      expect(await focused(p)).toBe('chip-after');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('shows a ring on a disabled chip reached from the keyboard', async () => {
+    const p = await openChip('');
+    try {
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.keyboard.press('Shift+Tab');
+      await p.keyboard.press('Tab');
+      await setDisabled(p, true);
+      const outline = await p
+        .locator('#chip-test .chip')
+        .evaluate((el) => getComputedStyle(el).outlineStyle);
+      expect(outline).toBe('solid');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('leaves focus alone when disabled is set and cleared in one task', async () => {
+    const p = await openChip('removable');
+    try {
+      await p.locator('#chip-test .chip-remove').focus();
+      await p.evaluate(async () => {
+        const chip = document.querySelector('#chip-test lcars-chip') as HTMLElement & {
+          disabled: boolean;
+          updateComplete: Promise<unknown>;
+        };
+        chip.disabled = true;
+        chip.disabled = false;
+        await chip.updateComplete;
+      });
+      expect(await focused(p)).toBe('.chip-remove');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('shows no ring when a pointer click disables the chip', async () => {
+    const p = await openChip('');
+    try {
+      await p.evaluate(() => {
+        const chip = document.querySelector('#chip-test lcars-chip') as HTMLElement & {
+          disabled: boolean;
+        };
+        chip.addEventListener('lcars-toggle', () => {
+          chip.disabled = true;
+        });
+      });
+      await p.locator('#chip-test .chip-toggle').click();
+      await expect.poll(() => focused(p)).toBe('LCARS-CHIP');
+      const outline = await p
+        .locator('#chip-test .chip')
+        .evaluate((el) => getComputedStyle(el).outlineStyle);
+      expect(outline).toBe('none');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps focus without scrolling the page', async () => {
+    const p = await openChip('');
+    try {
+      await p.evaluate(() => {
+        const host = document.getElementById('chip-test')!;
+        host.style.position = 'absolute';
+        const spacer = document.createElement('div');
+        spacer.style.height = '5000px';
+        document.body.appendChild(spacer);
+      });
+      await p.locator('#chip-test .chip-toggle').focus();
+      await p.evaluate(() => {
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = 'visible';
+        window.scrollTo(0, 3000);
+      });
+      const before = await p.evaluate(() => window.scrollY);
+      expect(before).toBeGreaterThan(0);
+      await setDisabled(p, true);
+      expect(await focused(p)).toBe('LCARS-CHIP');
+      expect(await p.evaluate(() => window.scrollY)).toBe(before);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('leaves focus alone when a chip without focus is disabled', async () => {
+    const p = await openChip('');
+    try {
+      await addNeighbours(p);
+      await p.locator('#chip-after').focus();
+      await setDisabled(p, true);
+      expect(await focused(p)).toBe('chip-after');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('returns focus to the toggle control on re-enable', async () => {
+    const p = await openChip('removable');
+    try {
+      await p.locator('#chip-test .chip-remove').focus();
+      await setDisabled(p, true);
+      await setDisabled(p, false);
+      expect(await focused(p)).toBe('.chip-toggle');
+      await p.keyboard.press('Enter');
+      expect(await chipLog(p)).toEqual(['lcars-toggle']);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('is back in the tab order once re-enabled', async () => {
+    const p = await openChip('');
+    try {
+      await addNeighbours(p);
+      await p.locator('#chip-test .chip-toggle').focus();
+      await setDisabled(p, true);
+      await p.keyboard.press('Tab');
+      await setDisabled(p, false);
+      expect(await focused(p)).toBe('chip-after');
+      await p.keyboard.press('Shift+Tab');
+      expect(await focused(p)).toBe('.chip-toggle');
+      expect(await p.locator('#chip-test .chip').getAttribute('tabindex')).toBeNull();
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('leaves a consumer tabindex alone', async () => {
+    const p = await openChip('tabindex="3"');
+    try {
+      await p.locator('#chip-test .chip-toggle').focus();
+      await setDisabled(p, true);
+      expect(await focused(p)).toBe('LCARS-CHIP');
+      await setDisabled(p, false);
+      expect(await focused(p)).toBe('.chip-toggle');
+      expect(await p.locator('#chip-test lcars-chip').getAttribute('tabindex')).toBe('3');
+    } finally {
+      await p.close();
+    }
+  });
+
   it('brightens on hover like a button, with no ring', async () => {
     const p = await openChip('');
     try {
