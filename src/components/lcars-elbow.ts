@@ -29,6 +29,9 @@ export class LcarsElbow extends LcarsElement {
     .arch,
     .bar-extension {
       background-color: var(--elbow-color, var(--lcars-color-primary));
+      /* Inherited, not set on the slots' content: page text is often the same
+         colour as this surface, and a slotted element's own colour must win. */
+      color: var(--lcars-color-on-accent, #000000);
     }
 
     /* The label rides in a band as tall as the bar extension, pinned to the same
@@ -241,7 +244,6 @@ export class LcarsElbow extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-wide, 0.08em);
       text-transform: uppercase;
-      color: var(--lcars-color-on-accent, #000000);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -253,7 +255,6 @@ export class LcarsElbow extends LcarsElement {
       font-weight: bold;
       letter-spacing: var(--lcars-letter-spacing-widest, 0.12em);
       text-transform: uppercase;
-      color: var(--lcars-color-on-accent, #000000);
       white-space: nowrap;
     }
   `;

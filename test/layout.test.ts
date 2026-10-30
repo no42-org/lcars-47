@@ -23,6 +23,8 @@
  *     query width are invisible on macOS overlay scrollbars, so those choices
  *     are policy on every platform and asserted by nothing here.
  *   - Nothing here looks at appearance. A green run is not a visual review.
+ *     The one exception is computed style that decides whether text can be
+ *     seen at all, compared against the component's own property path.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -726,4 +728,45 @@ describe('frame height contract', () => {
     );
     expect(r.clientHeight).toBeGreaterThanOrEqual(r.scrollHeight - SUBPIXEL_TOLERANCE_PX);
   });
+});
+
+describe('elbow slotted content', () => {
+  it.each(['top-left', 'bottom-left', 'top-right', 'bottom-right'])(
+    'colours slotted text like the matching property, and lets its own colour win (%s)',
+    async (orientation) => {
+      const r = await page.evaluate(async (orientation) => {
+        const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        elbow.setAttribute('orientation', orientation);
+        elbow.setAttribute('heading', 'HEADING');
+        elbow.setAttribute('label', 'LABEL');
+        document.body.appendChild(elbow);
+        try {
+          await elbow.updateComplete;
+          const colorOf = (el: Element) => getComputedStyle(el).color;
+          const propertyLabel = colorOf(elbow.shadowRoot!.querySelector('.label-text')!);
+          const propertyHeading = colorOf(elbow.shadowRoot!.querySelector('.title-text')!);
+
+          elbow.innerHTML = `
+            <span slot="label">LABEL</span>
+            <span>HEADING</span>
+            <span slot="label" style="color: rgb(1, 2, 3)">OWN</span>`;
+          const [label, heading, own] = Array.from(elbow.children);
+          return {
+            propertyLabel,
+            propertyHeading,
+            label: colorOf(label),
+            heading: colorOf(heading),
+            own: colorOf(own),
+          };
+        } finally {
+          elbow.remove();
+        }
+      }, orientation);
+      expect(r.label).toBe(r.propertyLabel);
+      expect(r.heading).toBe(r.propertyHeading);
+      expect(r.own).toBe('rgb(1, 2, 3)');
+    }
+  );
 });
