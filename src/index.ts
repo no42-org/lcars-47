@@ -23,6 +23,11 @@ import {
   type LcarsChangeEventDetail,
   type LcarsSubmitEventDetail,
 } from './components/lcars-keypad';
+import {
+  LcarsChip,
+  type LcarsToggleEventDetail,
+  type LcarsRemoveEventDetail,
+} from './components/lcars-chip';
 
 // Export Themes & Utilities
 export {
@@ -75,6 +80,9 @@ export {
   type LcarsKeypadKeyKind,
   type LcarsChangeEventDetail,
   type LcarsSubmitEventDetail,
+  LcarsChip,
+  type LcarsToggleEventDetail,
+  type LcarsRemoveEventDetail,
 };
 
 // Register custom elements, guarded so a second evaluation of the module
@@ -93,3 +101,4 @@ define('lcars-readout', LcarsReadout);
 define('lcars-bargraph', LcarsBargraph);
 define('lcars-status-pill', LcarsStatusPill);
 define('lcars-keypad', LcarsKeypad);
+define('lcars-chip', LcarsChip);
