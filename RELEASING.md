@@ -47,6 +47,8 @@ A release is triggered by **pushing a `vX.Y.Z` tag**. Nothing else publishes.
    ```
 
 6. After the Pages deploy refreshes the demo, open it on a real phone and scroll through.
+   Then measure font centering in real Safari with `make check-safari` and `SAFARI_PLATFORM=iOS make check-safari`.
+   The release is already public by this step, so a failure here means a follow-up release.
    This step is manual on purpose: the cross-engine suite runs Playwright WebKit, which shares Safari's layout engine but not its text stack, and font metrics are exactly where a phone has already diverged once.
 
 Prerelease tags (`vX.Y.Z-rc1`) are detected by the hyphen and marked `--prerelease` automatically.
