@@ -131,6 +131,8 @@ describe('CSS Design Token Source Verification', () => {
     expect(typographyCss).toContain("font-family: 'Antonio';");
     expect(typographyCss).toContain("url('./fonts/antonio-latin-var.woff2') format('woff2')");
     expect(typographyCss).toContain("url('./fonts/antonio-latin-ext-var.woff2') format('woff2')");
+    expect(typographyCss.match(/ascent-override: 107\.666%;/g)).toHaveLength(2);
+    expect(typographyCss.match(/descent-override: 21\.729%;/g)).toHaveLength(2);
     expect(typographyCss).toContain('--lcars-font-family:');
     expect(typographyCss).toContain('--lcars-font-size-xs:');
     expect(typographyCss).toContain('--lcars-font-size-3xl:');

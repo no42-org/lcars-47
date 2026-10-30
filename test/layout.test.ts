@@ -770,3 +770,42 @@ describe('elbow slotted content', () => {
     }
   );
 });
+
+describe('heading clip boxes', () => {
+  it.each([
+    ['lcars-panel', 'heading', '.panel-title'],
+    ['lcars-elbow', 'heading', '.title-text'],
+  ])('leaves room for accented capitals in %s', async (tag, attribute, selector) => {
+    // Balanced font metrics lift capitals inside the line box, so a heading that
+    // clips for its ellipsis would cut accents off the top of them.
+    const r = await page.evaluate(
+      async ({ tag, attribute, selector }) => {
+        const host = document.createElement(tag) as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        host.setAttribute(attribute, 'Å');
+        document.body.appendChild(host);
+        try {
+          await host.updateComplete;
+          const title = host.shadowRoot!.querySelector(selector)!;
+          const style = getComputedStyle(title);
+          const font = `${style.fontWeight} ${style.fontSize} Antonio`;
+          await document.fonts.load(font);
+          const probe = document.createElement('i');
+          probe.style.cssText = 'display: inline-block; width: 0; height: 0';
+          title.appendChild(probe);
+          const context = document.createElement('canvas').getContext('2d')!;
+          context.font = font;
+          return {
+            inkTop: probe.getBoundingClientRect().bottom - context.measureText('Å').actualBoundingBoxAscent,
+            clipTop: title.getBoundingClientRect().top,
+          };
+        } finally {
+          host.remove();
+        }
+      },
+      { tag, attribute, selector }
+    );
+    expect(r.inkTop).toBeGreaterThanOrEqual(r.clipTop);
+  });
+});
