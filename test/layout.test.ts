@@ -770,6 +770,146 @@ describe('elbow slotted content', () => {
       expect(r.own).toBe('rgb(1, 2, 3)');
     }
   );
+
+  // Renders an elbow with both properties set, then swaps in slotted text, and
+  // reports every text colour next to what the two on-accent tokens compute to.
+  const elbowText = (attrs: Record<string, string>, elbowStyle = '') =>
+    page.evaluate(
+      async ({ attrs, elbowStyle }) => {
+        const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        for (const [name, value] of Object.entries(attrs)) elbow.setAttribute(name, value);
+        elbow.setAttribute('heading', 'HEADING');
+        elbow.setAttribute('label', 'LABEL');
+        elbow.style.cssText = elbowStyle;
+        const probe = document.createElement('span');
+        document.body.append(elbow, probe);
+        try {
+          await elbow.updateComplete;
+          const colorOf = (el: Element) => getComputedStyle(el).color;
+          const tokenColor = (token: string) => {
+            probe.style.color = `var(${token})`;
+            return colorOf(probe);
+          };
+          const label = colorOf(elbow.shadowRoot!.querySelector('.label-text')!);
+          const heading = colorOf(elbow.shadowRoot!.querySelector('.title-text')!);
+          elbow.innerHTML = `
+            <span slot="label">LABEL</span>
+            <span>HEADING</span>
+            <span slot="label" style="color: rgb(9, 8, 7)">OWN</span>`;
+          const [slottedLabel, slottedHeading, own] = Array.from(elbow.children);
+          return {
+            texts: [label, heading, colorOf(slottedLabel), colorOf(slottedHeading)],
+            own: colorOf(own),
+            onAccent: tokenColor('--lcars-color-on-accent'),
+            inverse: tokenColor('--lcars-color-on-accent-inverse'),
+          };
+        } finally {
+          elbow.remove();
+          probe.remove();
+        }
+      },
+      { attrs, elbowStyle }
+    );
+
+  it.each<Record<string, string>>([
+    {},
+    { color: 'deep-teal' },
+    { color: 'gold' },
+    { color: 'rgb(5, 5, 5)' },
+  ])(
+    'uses on-accent text by default (%o)',
+    async (attrs) => {
+      const r = await elbowText(attrs);
+      expect(new Set(r.texts)).toEqual(new Set([r.onAccent]));
+    }
+  );
+
+  it.each([
+    'surface',
+    'dark-blue',
+    'red',
+    'alert-red',
+    '--lcars-color-surface',
+    '--lcars-color-bg',
+    '--lcars-tng-black',
+    '--lcars-nemesis-slate',
+    '--lcars-contrast-black',
+  ])(
+    'uses inverse text on the dark colour %s',
+    async (color) => {
+      const r = await elbowText({ color });
+      expect(new Set(r.texts)).toEqual(new Set([r.inverse]));
+    }
+  );
+
+  it.each([undefined, 'surface'])(
+    'lets --lcars-elbow-text set all text, and a slotted colour still wins (color: %s)',
+    async (color) => {
+      const r = await elbowText(color ? { color } : {}, '--lcars-elbow-text: rgb(1, 2, 3)');
+      expect(new Set(r.texts)).toEqual(new Set(['rgb(1, 2, 3)']));
+      expect(r.own).toBe('rgb(9, 8, 7)');
+    }
+  );
+
+  // `alert` and `accent` change with the theme, which the elbow cannot see. These
+  // are the only colours allowed under 4.5:1, and the README names them.
+  it.each([
+    ['tng', ['alert']],
+    ['ds9', ['accent', 'alert']],
+    ['nemesis', []],
+    ['contrast', []],
+  ])(
+    'keeps text above 4.5:1 on every named colour in the %s theme, except %j',
+    async (theme, knownGaps) => {
+      const below = await page.evaluate(async (theme) => {
+        const luminance = (rgb: string) => {
+          const [r, g, b] = rgb
+            .match(/\d+(\.\d+)?/g)!
+            .slice(0, 3)
+            .map((c) => {
+              const v = Number(c) / 255;
+              return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+            });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('data-lcars-theme', theme);
+        document.body.appendChild(wrapper);
+        try {
+          const out: string[] = [];
+          for (const color of [
+            'accent', 'alert', 'info', 'primary', 'secondary', 'surface', 'warning',
+            'butterscotch', 'gold', 'tan', 'lilac', 'violet', 'red',
+            'ice-blue', 'dark-blue', 'magenta', 'light-purple', 'amber', 'alert-red',
+            'teal', 'deep-teal', 'nemesis-gold', 'light-cyan', 'nemesis-alert-red',
+            'cyan', 'green', 'contrast-amber', 'contrast-white',
+            '--lcars-color-bg', '--lcars-tng-black', '--lcars-nemesis-slate', '--lcars-contrast-black',
+          ]) {
+            const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+              updateComplete: Promise<unknown>;
+            };
+            elbow.setAttribute('color', color);
+            elbow.setAttribute('label', 'LABEL');
+            wrapper.appendChild(elbow);
+            await elbow.updateComplete;
+            const surface = elbow.shadowRoot!.querySelector('.arch')!;
+            const text = getComputedStyle(surface.querySelector('.label-text')!).color;
+            const [a, b] = [
+              luminance(text),
+              luminance(getComputedStyle(surface).backgroundColor),
+            ].sort((x, y) => y - x);
+            if ((a + 0.05) / (b + 0.05) < 4.5) out.push(color);
+          }
+          return out;
+        } finally {
+          wrapper.remove();
+        }
+      }, theme);
+      expect(below).toEqual(knownGaps);
+    }
+  );
 });
 
 describe('heading clip boxes', () => {
@@ -1313,6 +1453,203 @@ describe('lcars-table', () => {
     } finally {
       await p.close();
     }
+  });
+
+  describe('a control rendered as a DOM node', () => {
+    async function addInputTable(p: Page): Promise<void> {
+      await p.evaluate(async () => {
+        const table = document.createElement('lcars-table') as TableElement;
+        table.id = 'input-test';
+        table.columns = [
+          { key: 'name', label: 'NAME', sortable: true },
+          { key: 'name', label: 'EDIT', render: () => document.createElement('input') },
+        ];
+        table.rows = [{ name: 'B' }, { name: 'A' }, { name: 'C' }];
+        document.body.appendChild(table);
+        await table.updateComplete;
+      });
+    }
+    const focusedInShadow = (p: Page) =>
+      p.evaluate(
+        () => document.querySelector('#input-test')!.shadowRoot!.activeElement?.tagName ?? null
+      );
+
+    it('keeps its value and focus through an update', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        const input = p.locator('#input-test tbody tr').first().locator('input');
+        await input.fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { color: string };
+          table.color = 'accent';
+          await table.updateComplete;
+        });
+        expect(await input.inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBe('INPUT');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps its value but not its focus when a re-sort moves its row', async () => {
+      // Moving an element takes it out of the document for an instant, and
+      // that blurs it. This pins the limit the README states.
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        await p.locator('#input-test tbody tr').first().locator('input').fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { sortKey: string };
+          table.sortKey = 'name';
+          await table.updateComplete;
+        });
+        const secondRow = p.locator('#input-test tbody tr').nth(1);
+        expect(await secondRow.locator('td').first().textContent()).toContain('B');
+        expect(await secondRow.locator('input').inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+  });
+
+  describe('scroll region tab stop', () => {
+    // A wrapper of known width around one 300px column, so the boundary is
+    // crossed by resizing the wrapper alone, with no table update.
+    async function addSizedTable(p: Page, width: number): Promise<void> {
+      await p.evaluate(async (width) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'tab-stop-wrapper';
+        wrapper.style.cssText = `width: ${width}px`;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.columns = [
+          {
+            key: 'x',
+            label: 'X',
+            render: () => {
+              const box = document.createElement('div');
+              box.style.cssText = 'width: 300px';
+              return box;
+            },
+          },
+        ];
+        table.rows = [{ x: 1 }];
+        wrapper.appendChild(table);
+        document.body.appendChild(wrapper);
+        await table.updateComplete;
+      }, width);
+    }
+    const tabIndexOf = (p: Page) =>
+      p.evaluate(
+        () =>
+          document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!
+            .getAttribute('tabindex')
+      );
+    const resize = (p: Page, width: number) =>
+      p.evaluate((width) => {
+        document.getElementById('tab-stop-wrapper')!.style.width = `${width}px`;
+      }, width);
+
+    it('is no tab stop when the table fits', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        expect(await tabIndexOf(p)).toBeNull();
+        const fits = await p.evaluate(() => {
+          const scroll = document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!;
+          return scroll.scrollWidth <= scroll.clientWidth;
+        });
+        expect(fits).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('is a tab stop when the table overflows, and Tab reaches it', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        expect(await tabIndexOf(p)).toBe('0');
+        await p.evaluate(() => {
+          (document.activeElement as HTMLElement | null)?.blur();
+          const before = document.createElement('button');
+          before.id = 'before-table';
+          document.getElementById('tab-stop-wrapper')!.before(before);
+          before.focus();
+        });
+        await p.keyboard.press('Tab');
+        expect(
+          await p.evaluate(
+            () => document.querySelector('#tab-stop-wrapper lcars-table') === document.activeElement
+          )
+        ).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('flips when a resize crosses the boundary, in both directions', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+        await resize(p, 600);
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps a focused region focused when it stops overflowing, until blur', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        const focusState = () =>
+          p.evaluate(() => {
+            const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+            return root.activeElement === root.querySelector('.scroll');
+          });
+        await p.evaluate(() => {
+          const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+          (root.querySelector('.scroll') as HTMLElement).focus();
+        });
+        expect(await focusState()).toBe(true);
+
+        await resize(p, 600);
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        expect(await focusState()).toBe(true);
+        expect(await tabIndexOf(p)).toBe('0');
+
+        await p.evaluate(() => (document.activeElement as HTMLElement).blur());
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('still follows a resize after being removed and added back', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await p.evaluate(() => {
+          const wrapper = document.getElementById('tab-stop-wrapper')!;
+          const table = wrapper.querySelector('lcars-table')!;
+          table.remove();
+          wrapper.appendChild(table);
+        });
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+      } finally {
+        await p.close();
+      }
+    });
   });
 
   it('aligns cells in different fonts on one baseline', async () => {
