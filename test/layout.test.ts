@@ -1006,6 +1006,232 @@ describe('interaction state tokens', () => {
       await p.close();
     }
   });
+
+  describe('lcars-button states', () => {
+    const PRESSED = { filter: 'brightness(1.4)', transform: 'matrix(0.98, 0, 0, 0.98, 0, 0)' };
+    const FLAT = { filter: 'brightness(1.4)', transform: 'none' };
+    const REST = { filter: 'none', transform: 'none' };
+
+    /** A workbench page with one fixed button whose clicks land in `window.buttonClicks`. */
+    async function openButton(attributes = ''): Promise<{ p: Page; inner: Locator; host: Locator }> {
+      const p = await openWorkbench(VIEWPORT);
+      await p.evaluate(async (attributes) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'button-test';
+        wrapper.style.cssText = 'position: fixed; top: 100px; left: 100px; z-index: 9999';
+        wrapper.innerHTML = `<lcars-button sound="none" ${attributes}>A</lcars-button>`;
+        document.body.appendChild(wrapper);
+        const button = wrapper.firstElementChild as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        const state = window as unknown as { buttonClicks: number };
+        state.buttonClicks = 0;
+        button.addEventListener('lcars-click', () => (state.buttonClicks += 1));
+        await button.updateComplete;
+      }, attributes);
+      const host = p.locator('#button-test lcars-button');
+      return { p, host, inner: host.locator('.button-inner') };
+    }
+
+    const expectLook = async (inner: Locator, look: { filter: string; transform: string }) => {
+      await expect.poll(() => computed(inner, 'filter')).toBe(look.filter);
+      await expect.poll(() => computed(inner, 'transform')).toBe(look.transform);
+    };
+
+    const clicks = (p: Page) =>
+      p.evaluate(() => (window as unknown as { buttonClicks: number }).buttonClicks);
+
+    it('keeps active brightness while an active button is hovered', async () => {
+      const { p, host, inner } = await openButton('active');
+      try {
+        await expectLook(inner, PRESSED);
+        await host.hover();
+        // Past the transition, so a dip towards hover brightness would show.
+        await p.waitForFunction(
+          (el) => el!.getAnimations().length === 0,
+          await inner.elementHandle()
+        );
+        await expectLook(inner, PRESSED);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('drops the transition and the scale under reduced motion', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        expect(await inner.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s');
+        await host.hover();
+        await p.mouse.down();
+        await expectLook(inner, FLAT);
+        await p.mouse.up();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('drops the latched scale under reduced motion', async () => {
+      const { p, inner } = await openButton('active');
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await expectLook(inner, FLAT);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('drops the %s press scale under reduced motion', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, FLAT);
+        await p.keyboard.up(key);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('shows the pressed state while %s is held', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, PRESSED);
+        await p.keyboard.down(key); // auto-repeat
+        await expectLook(inner, PRESSED);
+        await p.keyboard.up(key);
+        await expectLook(inner, REST);
+        expect(await clicks(p)).toBe(1);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('shows the keyboard press over hover', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.hover();
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, PRESSED);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Enter', 'Space'])('clears the %s press on blur', async (key) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(key);
+        await expectLook(inner, PRESSED);
+        await host.blur();
+        await expectLook(inner, REST);
+        await p.keyboard.up(key);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it.each(['Meta', 'Control', 'Alt'])('activates but shows no press on a %s chord', async (mod) => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.focus();
+        await p.keyboard.down(mod);
+        await p.keyboard.down('Enter');
+        await expect.poll(() => clicks(p)).toBe(1);
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+        await p.keyboard.up(mod);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('holds the press until the key that set it is released', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        // No transition, or the first read still sees the old value mid-fade.
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await host.focus();
+        await p.keyboard.down('Space');
+        await expectLook(inner, FLAT);
+        await p.keyboard.press('Enter');
+        await expectLook(inner, FLAT);
+        await p.keyboard.up('Space');
+        await expectLook(inner, REST);
+        expect(await clicks(p)).toBe(2);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('clears a press that came from a slotted control when it loses focus', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => (el.innerHTML = '<a href="#go">GO</a>'));
+        const link = host.locator('a');
+        await link.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, PRESSED);
+        await link.blur();
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('does not stick when the click handler moves focus', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => {
+          const other = document.createElement('button');
+          el.parentElement!.appendChild(other);
+          el.addEventListener('lcars-click', () => other.focus());
+        });
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('does not stick when the click handler disables the button', async () => {
+      const { p, host, inner } = await openButton();
+      try {
+        await host.evaluate((el) => {
+          el.addEventListener('lcars-click', () => el.setAttribute('disabled', ''));
+        });
+        await host.focus();
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+        await host.evaluate((el) => el.removeAttribute('disabled'));
+        await expectLook(inner, REST);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('shows no keyboard press on a disabled button', async () => {
+      const { p, host, inner } = await openButton('disabled');
+      try {
+        await host.evaluate((el: HTMLElement) => el.focus());
+        await p.keyboard.down('Enter');
+        await expectLook(inner, REST);
+        await p.keyboard.up('Enter');
+      } finally {
+        await p.close();
+      }
+    });
+  });
 });
 
 describe('lcars-chip', () => {
@@ -1455,6 +1681,203 @@ describe('lcars-table', () => {
     } finally {
       await p.close();
     }
+  });
+
+  describe('a control rendered as a DOM node', () => {
+    async function addInputTable(p: Page): Promise<void> {
+      await p.evaluate(async () => {
+        const table = document.createElement('lcars-table') as TableElement;
+        table.id = 'input-test';
+        table.columns = [
+          { key: 'name', label: 'NAME', sortable: true },
+          { key: 'name', label: 'EDIT', render: () => document.createElement('input') },
+        ];
+        table.rows = [{ name: 'B' }, { name: 'A' }, { name: 'C' }];
+        document.body.appendChild(table);
+        await table.updateComplete;
+      });
+    }
+    const focusedInShadow = (p: Page) =>
+      p.evaluate(
+        () => document.querySelector('#input-test')!.shadowRoot!.activeElement?.tagName ?? null
+      );
+
+    it('keeps its value and focus through an update', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        const input = p.locator('#input-test tbody tr').first().locator('input');
+        await input.fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { color: string };
+          table.color = 'accent';
+          await table.updateComplete;
+        });
+        expect(await input.inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBe('INPUT');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps its value but not its focus when a re-sort moves its row', async () => {
+      // Moving an element takes it out of the document for an instant, and
+      // that blurs it. This pins the limit the README states.
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        await p.locator('#input-test tbody tr').first().locator('input').fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { sortKey: string };
+          table.sortKey = 'name';
+          await table.updateComplete;
+        });
+        const secondRow = p.locator('#input-test tbody tr').nth(1);
+        expect(await secondRow.locator('td').first().textContent()).toContain('B');
+        expect(await secondRow.locator('input').inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+  });
+
+  describe('scroll region tab stop', () => {
+    // A wrapper of known width around one 300px column, so the boundary is
+    // crossed by resizing the wrapper alone, with no table update.
+    async function addSizedTable(p: Page, width: number): Promise<void> {
+      await p.evaluate(async (width) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'tab-stop-wrapper';
+        wrapper.style.cssText = `width: ${width}px`;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.columns = [
+          {
+            key: 'x',
+            label: 'X',
+            render: () => {
+              const box = document.createElement('div');
+              box.style.cssText = 'width: 300px';
+              return box;
+            },
+          },
+        ];
+        table.rows = [{ x: 1 }];
+        wrapper.appendChild(table);
+        document.body.appendChild(wrapper);
+        await table.updateComplete;
+      }, width);
+    }
+    const tabIndexOf = (p: Page) =>
+      p.evaluate(
+        () =>
+          document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!
+            .getAttribute('tabindex')
+      );
+    const resize = (p: Page, width: number) =>
+      p.evaluate((width) => {
+        document.getElementById('tab-stop-wrapper')!.style.width = `${width}px`;
+      }, width);
+
+    it('is no tab stop when the table fits', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        expect(await tabIndexOf(p)).toBeNull();
+        const fits = await p.evaluate(() => {
+          const scroll = document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!;
+          return scroll.scrollWidth <= scroll.clientWidth;
+        });
+        expect(fits).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('is a tab stop when the table overflows, and Tab reaches it', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        expect(await tabIndexOf(p)).toBe('0');
+        await p.evaluate(() => {
+          (document.activeElement as HTMLElement | null)?.blur();
+          const before = document.createElement('button');
+          before.id = 'before-table';
+          document.getElementById('tab-stop-wrapper')!.before(before);
+          before.focus();
+        });
+        await p.keyboard.press('Tab');
+        expect(
+          await p.evaluate(
+            () => document.querySelector('#tab-stop-wrapper lcars-table') === document.activeElement
+          )
+        ).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('flips when a resize crosses the boundary, in both directions', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+        await resize(p, 600);
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps a focused region focused when it stops overflowing, until blur', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        const focusState = () =>
+          p.evaluate(() => {
+            const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+            return root.activeElement === root.querySelector('.scroll');
+          });
+        await p.evaluate(() => {
+          const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+          (root.querySelector('.scroll') as HTMLElement).focus();
+        });
+        expect(await focusState()).toBe(true);
+
+        await resize(p, 600);
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        expect(await focusState()).toBe(true);
+        expect(await tabIndexOf(p)).toBe('0');
+
+        await p.evaluate(() => (document.activeElement as HTMLElement).blur());
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('still follows a resize after being removed and added back', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await p.evaluate(() => {
+          const wrapper = document.getElementById('tab-stop-wrapper')!;
+          const table = wrapper.querySelector('lcars-table')!;
+          table.remove();
+          wrapper.appendChild(table);
+        });
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+      } finally {
+        await p.close();
+      }
+    });
   });
 
   it('aligns cells in different fonts on one baseline', async () => {
