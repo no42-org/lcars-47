@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { html, css, nothing, type TemplateResult } from 'lit';
+import { html, css, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { LcarsElement } from './base';
 
@@ -21,7 +21,12 @@ export interface LcarsTableColumn {
   align?: LcarsTableAlign;
   /** Sets the column in the monospace font. */
   mono?: boolean;
-  /** Cell content: a string, a DOM node or a Lit template. Defaults to the row's value. */
+  /**
+   * Cell content: a string, a DOM node or a Lit template. Defaults to the row's
+   * value. A single DOM node is kept for its row object and column, so this
+   * runs once for such a cell. Anything else, a fragment or an array of nodes
+   * included, runs on every update.
+   */
   render?(row: LcarsTableRow): unknown;
 }
 
@@ -193,6 +198,15 @@ export class LcarsTable extends LcarsElement {
   @property({ type: String })
   label = 'Table';
 
+  /**
+   * Nodes from `render`, by row object, then by that row's listing in `rows`,
+   * then by column index. A node sits in one place only, so a row object listed
+   * twice needs a set per listing.
+   */
+  private keptNodes = new WeakMap<LcarsTableRow, Node[][]>();
+
+  private overflowObserver?: ResizeObserver;
+
   private get sortedRows(): LcarsTableRow[] {
     const key = this.sortKey;
     if (!this.columns.some((column) => column.key === key && column.sortable)) {
@@ -259,27 +273,120 @@ export class LcarsTable extends LcarsElement {
     `;
   }
 
-  private renderCell(column: LcarsTableColumn, row: LcarsTableRow): TemplateResult {
+  private keepNode(row: LcarsTableRow, listing: number, index: number, node: Node): void {
+    const listings = this.keptNodes.get(row) ?? [];
+    this.keptNodes.set(row, listings);
+    (listings[listing] ??= [])[index] = node;
+  }
+
+  private cellContent(
+    column: LcarsTableColumn,
+    index: number,
+    row: LcarsTableRow,
+    listing: number
+  ): unknown {
+    if (!column.render) {
+      return cellValue(row, column.key) ?? '';
+    }
+    const kept = this.keptNodes.get(row)?.[listing]?.[index];
+    if (kept) {
+      return kept;
+    }
+    const content = column.render(row);
+    // Inserting a fragment empties it, so a kept one would render nothing.
+    if (content instanceof Node && !(content instanceof DocumentFragment)) {
+      this.keepNode(row, listing, index, content);
+    }
+    return content;
+  }
+
+  private renderCell(column: LcarsTableColumn, content: unknown): TemplateResult {
     return html`
       <td
         class="${column.mono ? 'mono' : ''}"
         style="--cell-align: ${column.align ?? 'start'};"
       >
-        ${column.render ? column.render(row) : (cellValue(row, column.key) ?? '')}
+        ${content}
       </td>
     `;
   }
 
+  private renderRow(row: LcarsTableRow, listing: number): TemplateResult {
+    return html`
+      <tr>
+        ${this.columns.map((column, index) =>
+          this.renderCell(column, this.cellContent(column, index, row, listing))
+        )}
+      </tr>
+    `;
+  }
+
+  private get scrollBox(): HTMLElement | null {
+    return this.renderRoot.querySelector('.scroll');
+  }
+
+  // Set here and not in the template: it takes layout to know, so a reactive
+  // value would queue a second update from inside `updated`. A focused box
+  // keeps it until blur, because removing it would drop keyboard focus.
+  private syncTabStop(): void {
+    const box = this.scrollBox;
+    if (box && box.scrollWidth > box.clientWidth) {
+      box.setAttribute('tabindex', '0');
+    } else if (this.shadowRoot?.activeElement !== box) {
+      box?.removeAttribute('tabindex');
+    }
+  }
+
+  // The box follows its container, the table follows content that changes
+  // without an update, such as a late font.
+  private observeOverflow(): void {
+    this.overflowObserver ??= new ResizeObserver(() => this.syncTabStop());
+    this.overflowObserver.observe(this.scrollBox!);
+    this.overflowObserver.observe(this.scrollBox!.querySelector('table')!);
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.hasUpdated) {
+      this.observeOverflow();
+    }
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.overflowObserver?.disconnect();
+  }
+
+  protected override willUpdate(changedProperties: PropertyValues<this>): void {
+    super.willUpdate(changedProperties);
+    if (changedProperties.has('columns')) {
+      this.keptNodes = new WeakMap();
+    }
+  }
+
+  protected override firstUpdated(changedProperties: PropertyValues<this>): void {
+    super.firstUpdated(changedProperties);
+    if (this.isConnected) {
+      this.observeOverflow();
+    }
+  }
+
+  override updated(changedProperties: PropertyValues<this>): void {
+    super.updated(changedProperties);
+    this.syncTabStop();
+  }
+
   override render(): TemplateResult {
     const tableColor = this.resolveColor(this.color, '--lcars-color-primary');
+    const listings = new Map<LcarsTableRow, number>();
 
     return html`
       <div
         class="scroll"
         role="region"
         aria-label="${this.label}"
-        tabindex="0"
         style="--table-color: ${tableColor};"
+        @blur=${this.syncTabStop}
       >
         <table aria-label="${this.label}">
           <thead>
@@ -288,13 +395,11 @@ export class LcarsTable extends LcarsElement {
             </tr>
           </thead>
           <tbody>
-            ${this.sortedRows.map(
-              (row) => html`
-                <tr>
-                  ${this.columns.map((column) => this.renderCell(column, row))}
-                </tr>
-              `
-            )}
+            ${this.sortedRows.map((row) => {
+              const listing = listings.get(row) ?? 0;
+              listings.set(row, listing + 1);
+              return this.renderRow(row, listing);
+            })}
           </tbody>
         </table>
       </div>

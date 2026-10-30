@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../src/index';
 import { setLcarsTheme } from '../src/theme';
 import { LcarsButton } from '../src/components/lcars-button';
@@ -220,6 +220,227 @@ describe('LCARS Geometric Framework Components', () => {
       ];
       await table.updateComplete;
       expect(table.shadowRoot?.querySelector('td a')?.textContent).toBe('Voyager');
+    });
+
+    describe('render returning a DOM node', () => {
+      const inputColumn = (render = vi.fn(() => document.createElement('input'))) => ({
+        render,
+        column: { key: 'name', label: 'Vessel', sortable: true, render } as LcarsTableColumn,
+      });
+      const cellNodes = (table: LcarsTable) =>
+        Array.from(table.shadowRoot?.querySelectorAll('td input') ?? []);
+
+      it('keeps the node across updates and renders it once', async () => {
+        const table = await makeTable();
+        const { render, column: col } = inputColumn();
+        table.columns = [col];
+        await table.updateComplete;
+        const before = cellNodes(table);
+
+        table.color = 'accent';
+        await table.updateComplete;
+
+        expect(cellNodes(table)).toEqual(before);
+        expect(cellNodes(table)[0]).toBe(before[0]);
+        expect(render).toHaveBeenCalledTimes(rows.length);
+      });
+
+      it('renders a new row object fresh', async () => {
+        const table = await makeTable();
+        const { column: col } = inputColumn();
+        table.columns = [col];
+        table.rows = [rows[0], rows[1]];
+        await table.updateComplete;
+        const [first, second] = cellNodes(table);
+
+        table.rows = [{ ...rows[0] }, rows[1]];
+        await table.updateComplete;
+
+        expect(cellNodes(table)[0]).not.toBe(first);
+        expect(cellNodes(table)[1]).toBe(second);
+      });
+
+      it('drops kept nodes when columns change', async () => {
+        const table = await makeTable();
+        const { column: col } = inputColumn();
+        table.columns = [col];
+        await table.updateComplete;
+        const before = cellNodes(table)[0];
+
+        table.columns = [{ ...col }];
+        await table.updateComplete;
+
+        expect(cellNodes(table)[0]).not.toBe(before);
+      });
+
+      it('moves kept nodes with their rows on a re-sort', async () => {
+        const table = await makeTable();
+        const col: LcarsTableColumn = {
+          key: 'name',
+          label: 'Vessel',
+          sortable: true,
+          render: (row) => {
+            const input = document.createElement('input');
+            input.value = (row as { name: string }).name;
+            return input;
+          },
+        };
+        table.columns = [col];
+        await table.updateComplete;
+        const byName = new Map(
+          (cellNodes(table) as HTMLInputElement[]).map((input) => [input.value, input])
+        );
+
+        await sortBy(table, 0);
+
+        const after = cellNodes(table) as HTMLInputElement[];
+        expect(after.map((input) => input.value)).toEqual([
+          'Defiant',
+          'Enterprise',
+          'Runabout',
+          'Voyager',
+        ]);
+        after.forEach((input) => expect(input).toBe(byName.get(input.value)));
+      });
+
+      it('gives a row object listed twice one node per listing, across updates', async () => {
+        const table = await makeTable();
+        const { column: col } = inputColumn();
+        table.columns = [col];
+        table.rows = [rows[0], rows[1], rows[0]];
+        await table.updateComplete;
+        const before = cellNodes(table);
+        expect(before).toHaveLength(3);
+        expect(new Set(before).size).toBe(3);
+
+        table.color = 'accent';
+        await table.updateComplete;
+
+        const after = cellNodes(table);
+        expect(after).toHaveLength(3);
+        after.forEach((node, index) => expect(node).toBe(before[index]));
+      });
+
+      it('gives two columns of one row their own nodes', async () => {
+        const table = await makeTable();
+        const { column: col } = inputColumn();
+        table.columns = [col, col];
+        table.rows = [rows[0]];
+        await table.updateComplete;
+        expect(new Set(cellNodes(table)).size).toBe(2);
+      });
+
+      it('renders a fragment again on every update, since inserting empties it', async () => {
+        const table = await makeTable();
+        table.columns = [
+          {
+            key: 'name',
+            label: 'Vessel',
+            sortable: true,
+            render: (row) => {
+              const fragment = document.createDocumentFragment();
+              fragment.append((row as { name: string }).name);
+              return fragment;
+            },
+          },
+        ];
+        await table.updateComplete;
+        await sortBy(table, 0);
+        expect(column(table, 0)).toEqual(['Defiant', 'Enterprise', 'Runabout', 'Voyager']);
+      });
+
+      it('renders untyped primitive rows without keeping anything', async () => {
+        const table = await makeTable();
+        table.columns = [
+          { key: 'x', label: 'X', render: (row) => String(row) },
+          { key: 'y', label: 'Y' },
+        ];
+        table.rows = ['Enterprise', 'Defiant'] as unknown as object[];
+        await table.updateComplete;
+        expect(column(table, 0)).toEqual(['Enterprise', 'Defiant']);
+      });
+
+      it('keeps calling render for templates and strings', async () => {
+        const table = await makeTable();
+        const render = vi.fn((row: object) => (row as { name: string }).name);
+        table.columns = [{ key: 'name', label: 'Vessel', render }];
+        await table.updateComplete;
+        const calls = render.mock.calls.length;
+
+        table.color = 'accent';
+        await table.updateComplete;
+
+        expect(render.mock.calls.length).toBe(calls + rows.length);
+      });
+    });
+
+    describe('scroll region tab stop', () => {
+      const scrollOf = (table: LcarsTable) =>
+        table.shadowRoot?.querySelector('.scroll') as HTMLElement;
+      const setOverflow = (table: LcarsTable, overflowing: boolean) =>
+        Object.defineProperty(scrollOf(table), 'scrollWidth', {
+          configurable: true,
+          get: () => (overflowing ? scrollOf(table).clientWidth + 1 : scrollOf(table).clientWidth),
+        });
+
+      class FakeObserver {
+        static instances: FakeObserver[] = [];
+        observed: Element[] = [];
+        disconnects = 0;
+        constructor(readonly callback: () => void) {
+          FakeObserver.instances.push(this);
+        }
+        observe(target: Element) {
+          this.observed.push(target);
+        }
+        unobserve() {}
+        disconnect() {
+          this.observed = [];
+          this.disconnects += 1;
+        }
+      }
+
+      beforeEach(() => {
+        FakeObserver.instances = [];
+        vi.stubGlobal('ResizeObserver', FakeObserver);
+      });
+      afterEach(() => vi.unstubAllGlobals());
+
+      it('is no tab stop while the content fits, and keeps its role and label', async () => {
+        const table = await makeTable();
+        const scroll = scrollOf(table);
+        expect(scroll.hasAttribute('tabindex')).toBe(false);
+        expect(scroll.getAttribute('role')).toBe('region');
+        expect(scroll.getAttribute('aria-label')).toBe('Table');
+      });
+
+      it('follows overflow on an update and on an observer report', async () => {
+        const table = await makeTable();
+        setOverflow(table, true);
+        table.color = 'accent';
+        await table.updateComplete;
+        expect(scrollOf(table).getAttribute('tabindex')).toBe('0');
+
+        setOverflow(table, false);
+        FakeObserver.instances[0].callback();
+        expect(scrollOf(table).hasAttribute('tabindex')).toBe(false);
+      });
+
+      it('observes the box and the table, and stops on disconnect until reconnected', async () => {
+        const table = await makeTable();
+        const observer = FakeObserver.instances[0];
+        expect(observer.observed).toEqual([
+          scrollOf(table),
+          table.shadowRoot?.querySelector('table'),
+        ]);
+
+        table.remove();
+        expect(observer.disconnects).toBe(1);
+        expect(observer.observed).toEqual([]);
+
+        document.body.appendChild(table);
+        expect(observer.observed).toHaveLength(2);
+      });
     });
   });
 
