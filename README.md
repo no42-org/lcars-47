@@ -257,7 +257,11 @@ table.rows = [{ name: 'Enterprise', warp: 9.6 }, { name: 'Defiant', warp: 9.5 }]
 Assign a new `rows` array to update the table. Changes made in place are not seen.
 Numbers sort numerically and other values as text in numeric order. Dates sort by time. Empty values (`null`, `undefined`, `''`, `NaN`) sort last in both directions.
 Cells do not wrap, so wide content scrolls.
-`render` runs on every update. A Lit template updates in place and keeps focus; a new DOM node replaces the old one and loses it.
+`render` runs on every update when it returns a string or a Lit template. A template updates in place and keeps focus. A re-sort leaves its elements in their position and gives them the new row's values.
+A single DOM node is kept for its row object and column, and `render` does not run again for that cell, so a control in it keeps its value and focus through updates. A fragment or an array of nodes is not kept.
+A kept node does not see a change to its row object, or to anything else `render` reads. Replace the row object to get a new node. Assigning `columns` renews every node.
+A re-sort moves a kept node with its row. It keeps its value, but a focused control in a row that moves loses focus.
+The scroll region is a tab stop only while its content overflows.
 
 ### `<lcars-keypad>`
 Authentic LCARS key grid for numeric codes and command sequences, with per-keypress procedural audio.

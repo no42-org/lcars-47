@@ -1089,6 +1089,203 @@ describe('lcars-table', () => {
     }
   });
 
+  describe('a control rendered as a DOM node', () => {
+    async function addInputTable(p: Page): Promise<void> {
+      await p.evaluate(async () => {
+        const table = document.createElement('lcars-table') as TableElement;
+        table.id = 'input-test';
+        table.columns = [
+          { key: 'name', label: 'NAME', sortable: true },
+          { key: 'name', label: 'EDIT', render: () => document.createElement('input') },
+        ];
+        table.rows = [{ name: 'B' }, { name: 'A' }, { name: 'C' }];
+        document.body.appendChild(table);
+        await table.updateComplete;
+      });
+    }
+    const focusedInShadow = (p: Page) =>
+      p.evaluate(
+        () => document.querySelector('#input-test')!.shadowRoot!.activeElement?.tagName ?? null
+      );
+
+    it('keeps its value and focus through an update', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        const input = p.locator('#input-test tbody tr').first().locator('input');
+        await input.fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { color: string };
+          table.color = 'accent';
+          await table.updateComplete;
+        });
+        expect(await input.inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBe('INPUT');
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps its value but not its focus when a re-sort moves its row', async () => {
+      // Moving an element takes it out of the document for an instant, and
+      // that blurs it. This pins the limit the README states.
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addInputTable(p);
+        await p.locator('#input-test tbody tr').first().locator('input').fill('typed');
+        await p.evaluate(async () => {
+          const table = document.querySelector('#input-test') as TableElement & { sortKey: string };
+          table.sortKey = 'name';
+          await table.updateComplete;
+        });
+        const secondRow = p.locator('#input-test tbody tr').nth(1);
+        expect(await secondRow.locator('td').first().textContent()).toContain('B');
+        expect(await secondRow.locator('input').inputValue()).toBe('typed');
+        expect(await focusedInShadow(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+  });
+
+  describe('scroll region tab stop', () => {
+    // A wrapper of known width around one 300px column, so the boundary is
+    // crossed by resizing the wrapper alone, with no table update.
+    async function addSizedTable(p: Page, width: number): Promise<void> {
+      await p.evaluate(async (width) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'tab-stop-wrapper';
+        wrapper.style.cssText = `width: ${width}px`;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.columns = [
+          {
+            key: 'x',
+            label: 'X',
+            render: () => {
+              const box = document.createElement('div');
+              box.style.cssText = 'width: 300px';
+              return box;
+            },
+          },
+        ];
+        table.rows = [{ x: 1 }];
+        wrapper.appendChild(table);
+        document.body.appendChild(wrapper);
+        await table.updateComplete;
+      }, width);
+    }
+    const tabIndexOf = (p: Page) =>
+      p.evaluate(
+        () =>
+          document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!
+            .getAttribute('tabindex')
+      );
+    const resize = (p: Page, width: number) =>
+      p.evaluate((width) => {
+        document.getElementById('tab-stop-wrapper')!.style.width = `${width}px`;
+      }, width);
+
+    it('is no tab stop when the table fits', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        expect(await tabIndexOf(p)).toBeNull();
+        const fits = await p.evaluate(() => {
+          const scroll = document
+            .querySelector('#tab-stop-wrapper lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!;
+          return scroll.scrollWidth <= scroll.clientWidth;
+        });
+        expect(fits).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('is a tab stop when the table overflows, and Tab reaches it', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        expect(await tabIndexOf(p)).toBe('0');
+        await p.evaluate(() => {
+          (document.activeElement as HTMLElement | null)?.blur();
+          const before = document.createElement('button');
+          before.id = 'before-table';
+          document.getElementById('tab-stop-wrapper')!.before(before);
+          before.focus();
+        });
+        await p.keyboard.press('Tab');
+        expect(
+          await p.evaluate(
+            () => document.querySelector('#tab-stop-wrapper lcars-table') === document.activeElement
+          )
+        ).toBe(true);
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('flips when a resize crosses the boundary, in both directions', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+        await resize(p, 600);
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('keeps a focused region focused when it stops overflowing, until blur', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 100);
+        const focusState = () =>
+          p.evaluate(() => {
+            const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+            return root.activeElement === root.querySelector('.scroll');
+          });
+        await p.evaluate(() => {
+          const root = document.querySelector('#tab-stop-wrapper lcars-table')!.shadowRoot!;
+          (root.querySelector('.scroll') as HTMLElement).focus();
+        });
+        expect(await focusState()).toBe(true);
+
+        await resize(p, 600);
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        await p.evaluate(() => new Promise(requestAnimationFrame));
+        expect(await focusState()).toBe(true);
+        expect(await tabIndexOf(p)).toBe('0');
+
+        await p.evaluate(() => (document.activeElement as HTMLElement).blur());
+        await expect.poll(() => tabIndexOf(p)).toBeNull();
+      } finally {
+        await p.close();
+      }
+    });
+
+    it('still follows a resize after being removed and added back', async () => {
+      const p = await openWorkbench(VIEWPORT);
+      try {
+        await addSizedTable(p, 600);
+        await p.evaluate(() => {
+          const wrapper = document.getElementById('tab-stop-wrapper')!;
+          const table = wrapper.querySelector('lcars-table')!;
+          table.remove();
+          wrapper.appendChild(table);
+        });
+        await resize(p, 100);
+        await expect.poll(() => tabIndexOf(p)).toBe('0');
+      } finally {
+        await p.close();
+      }
+    });
+  });
+
   it('aligns cells in different fonts on one baseline', async () => {
     const baselines = await page.evaluate(async () => {
       const table = document.createElement('lcars-table') as TableElement;
