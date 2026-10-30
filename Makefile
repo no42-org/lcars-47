@@ -6,7 +6,7 @@
 
 NPM ?= npm
 
-.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify verify-pins check-safari dev clean distclean
+.PHONY: help install install-browsers install-browsers-all typecheck test test-watch test-layout test-compat build site verify verify-pins check-safari balance-fonts dev clean distclean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -74,6 +74,11 @@ verify-pins: ## Check that action pins and the images passed to them agree
 # reach for iOS, since localhost there is the phone.
 check-safari: ## Measure Antonio centering in real Safari (SAFARI_PLATFORM=mac|iOS)
 	node scripts/measure-safari-centering.mjs
+
+# One-off after a font update, outside verify: it rewrites the bundled files and
+# needs Python with fonttools and brotli. See src/tokens/fonts/README.md.
+balance-fonts: ## Balance Antonio's vertical metrics in the bundled font files
+	python3 scripts/balance-font-metrics.py src/tokens/fonts/*.woff2
 
 release-build: verify ## Assemble signed-release inputs into release/
 	rm -rf release && mkdir -p release
