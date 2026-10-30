@@ -26,6 +26,7 @@ The workbench above is `index.html` in this repository, recorded live.
 - **Telemetry & Data Displays**: High-precision tabular readouts (`<lcars-readout>`), segmented/continuous level gauges (`<lcars-bargraph>`), and status pills (`<lcars-status-pill>`). Lit batches property changes into a single render per microtask.
 - **Tactile Command Input**: An LCARS keypad grid (`<lcars-keypad>`) emitting typed `lcars-change` and `lcars-submit` events, fully operable from a physical keyboard.
 - **Self-Contained Typography**: Bundled local `@font-face` definitions for Antonio condensed sans-serif with zero remote CDN calls.
+  Its metrics are balanced so capitals sit centered in a line box.
 - **Dual Bundle Distribution**: ESM module bundle for modern bundlers (Vite, Rollup, Webpack) and self-contained IIFE bundle for drop-in CDN `<script>` tag usage.
 
 ---

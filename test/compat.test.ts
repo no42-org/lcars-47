@@ -96,6 +96,44 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     }
   });
 
+  it('centres Antonio capitals in a button label', async () => {
+    // Font metrics are the category engines disagree on, and the descriptors
+    // that balance them are ignored silently where unsupported. The baseline
+    // comes from an empty inline-block, which sits on it; canvas gives the cap
+    // height, because no DOM box measures ink.
+    const p = await openWorkbench();
+    try {
+      const r = await p.evaluate(async () => {
+        const button = document.createElement('lcars-button') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        button.innerHTML = '<span>ENGAGE<i style="display: inline-block; width: 0; height: 0"></i></span>';
+        document.body.appendChild(button);
+        try {
+          await button.updateComplete;
+          const inner = button.shadowRoot!.querySelector('.button-inner')!;
+          const style = getComputedStyle(inner);
+          const font = `${style.fontWeight} ${style.fontSize} Antonio`;
+          await document.fonts.load(font);
+          const box = inner.getBoundingClientRect();
+          const baseline = button.querySelector('i')!.getBoundingClientRect().bottom;
+          const context = document.createElement('canvas').getContext('2d')!;
+          context.font = font;
+          const capHeight = context.measureText('H').actualBoundingBoxAscent;
+          return { above: baseline - capHeight - box.top, below: box.bottom - baseline };
+        } finally {
+          button.remove();
+        }
+      });
+      expect(
+        Math.abs(r.above - r.below),
+        `${r.above}px above and ${r.below}px below the capitals in ${engineName}`
+      ).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('keeps a live readout the same size for every value with the same digit count', async () => {
     // The readout wrap-flicker class, checked per engine: font shaping, ch
     // resolution and advance hinting all differ across engines, and each has

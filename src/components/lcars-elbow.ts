@@ -247,6 +247,10 @@ export class LcarsElbow extends LcarsElement {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      /* Clip room for accented capitals, which reach past the line box of this
+         font's balanced metrics. The margin cancels it out of layout. */
+      padding-block: 0.1em;
+      margin-block: -0.1em;
     }
 
     .label-text {
