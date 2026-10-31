@@ -52,6 +52,20 @@ if (iife !== undefined && (/^\s*import\b/m.test(iife) || /^\s*export\b/m.test(ii
   errors.push('dist/lcars.iife.js contains top-level import/export; expected self-contained IIFE');
 }
 
+// Minifiers pick their own quote: the IIFE pass uses backticks. The manifest
+// itself must stay out: the bundles need the one string it provides.
+const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+for (const name of ['index.js', 'lcars.iife.js']) {
+  const bundle = contents.get(name);
+  if (bundle === undefined) continue;
+  if (!['"', "'", '`'].some((quote) => bundle.includes(`${quote}${version}${quote}`))) {
+    errors.push(`dist/${name} does not carry the manifest version ${version}`);
+  }
+  if (bundle.includes('devDependencies')) {
+    errors.push(`dist/${name} bundles the package manifest`);
+  }
+}
+
 // Public API symbols must survive declaration rollup. test/dist.test.ts makes
 // the same assertion, but its block is skipped when no build is present, so
 // this postbuild check is the one that always runs.
