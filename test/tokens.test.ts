@@ -18,13 +18,15 @@ import {
   getLcarsTheme,
 } from '../src/index';
 
+const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
+
 describe('LCARS Design Tokens & Theme Manager', () => {
   beforeEach(() => {
     document.documentElement.removeAttribute('data-lcars-theme');
   });
 
   it('exports valid version and supported theme list', () => {
-    expect(VERSION).toBe('0.0.2');
+    expect(VERSION).toBe(pkg.version);
     expect(LCARS_THEMES).toEqual(['tng', 'ds9', 'nemesis', 'contrast']);
     expect(LCARS_THEME_ALIASES).toEqual({
       voyager: 'ds9',

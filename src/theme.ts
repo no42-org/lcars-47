@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-export const VERSION = '0.0.2';
+import { version } from '../package.json';
+
+export const VERSION = version;
 
 export type LcarsEraTheme = 'tng' | 'ds9' | 'nemesis' | 'contrast';
 
