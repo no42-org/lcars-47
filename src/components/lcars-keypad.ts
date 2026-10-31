@@ -86,7 +86,9 @@ export class LcarsKeypad extends LcarsElement {
       box-sizing: border-box;
     }
 
-    :host([disabled]) {
+    /* The keys, not the host: the grid holds focus while disabled, and its
+       ring has to stay at full strength. */
+    :host([disabled]) .key {
       opacity: 0.45;
     }
 
@@ -170,6 +172,14 @@ export class LcarsKeypad extends LcarsElement {
       z-index: 1;
     }
 
+    /* Inset: the grid is what holds focus while disabled, and an outset ring
+       would land on whatever sits beside the keypad. */
+    .keypad:focus-visible {
+      outline: var(--lcars-border-width, 3px) solid
+        var(--lcars-keypad-focus-color, var(--lcars-color-text));
+      outline-offset: calc(-1 * var(--lcars-border-width, 3px));
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .key {
         transition: none;
@@ -208,21 +218,14 @@ export class LcarsKeypad extends LcarsElement {
   @property({ type: String })
   sound: LcarsSoundType | (string & {}) = 'input';
 
-  private restoreFocusOnDisable = false;
+  private restoreFocus = false;
+
+  /** The key to return to on re-enable, so Enter still means Enter. */
+  private lastKey?: string;
 
   constructor() {
     super();
     this.addEventListener('keydown', this.handleKeyDown.bind(this));
-  }
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    // Focus target of last resort. `tabindex="-1"` keeps the host out of the
-    // tab order (the keys are the tab stops) while still letting
-    // `delegatesFocus` land focus somewhere when every key is disabled.
-    if (!this.hasAttribute('tabindex')) {
-      this.setAttribute('tabindex', '-1');
-    }
   }
 
   /**
@@ -254,12 +257,15 @@ export class LcarsKeypad extends LcarsElement {
       this.value = normalized.length > limit ? normalized.slice(0, limit) : normalized;
     }
 
-    // Must run before the render disables the keys: the browser drops focus to
-    // <body> the instant the focused key becomes disabled, so afterwards there
-    // is nothing left to detect and nothing left to blur cleanly.
-    if (changedProperties.has('disabled') && this.disabled && this.hasKeyFocus()) {
-      (this.shadowRoot?.activeElement as HTMLElement | null)?.blur?.();
-      this.restoreFocusOnDisable = true;
+    // Must run before the render: the element holding focus is about to stop
+    // being focusable, and the browser drops focus to <body> the instant it
+    // does, so afterwards there is nothing left to detect.
+    if (changedProperties.has('disabled') && changedProperties.get('disabled') !== this.disabled) {
+      const active = this.shadowRoot?.activeElement as HTMLElement | null | undefined;
+      this.restoreFocus = !!active;
+      if (this.disabled) {
+        this.lastKey = active?.dataset.key;
+      }
     }
   }
 
@@ -267,17 +273,19 @@ export class LcarsKeypad extends LcarsElement {
     super.updated(changedProperties);
 
     // Disabling the focused key would strand a keyboard user at the top of the
-    // document. Anchor focus on the host so the next Tab resumes from here.
-    if (this.restoreFocusOnDisable) {
-      this.restoreFocusOnDisable = false;
-      this.focus();
+    // document, so the grid holds focus until the keys come back. Named targets
+    // rather than this.focus(): no engine lets a delegatesFocus host take focus
+    // itself, and delegation does nothing while focus is already inside. Going
+    // straight there also spares host listeners a blur that means nothing.
+    if (this.restoreFocus) {
+      this.restoreFocus = false;
+      const root = this.shadowRoot;
+      const target = this.disabled
+        ? root?.querySelector<HTMLElement>('.keypad')
+        : (root?.querySelector<HTMLElement>(`[data-key="${this.lastKey}"]`) ??
+          root?.querySelector<HTMLElement>('.key'));
+      target?.focus({ preventScroll: true });
     }
-  }
-
-  /** True when focus currently sits on one of this keypad's keys. */
-  private hasKeyFocus(): boolean {
-    const active = this.shadowRoot?.activeElement;
-    return !!active && active.classList?.contains('key');
   }
 
   private playFeedback(sound: string): void {
@@ -428,6 +436,7 @@ export class LcarsKeypad extends LcarsElement {
       <div
         class="keypad"
         role="group"
+        tabindex="${this.disabled ? '-1' : nothing}"
         aria-label="${this.label || 'KEYPAD'}"
         aria-disabled="${this.disabled}"
         style="--keypad-key-color: ${keyColor};"

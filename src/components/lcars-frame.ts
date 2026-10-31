@@ -47,6 +47,10 @@ export class LcarsFrame extends LcarsElement {
          outside the box to keep it honest. */
       max-height: 100%;
       overflow: auto;
+      /* The same pairing as the regions below, for the slots that have no
+         scroller of their own: positioned footer content past the clamp would
+         otherwise resolve against the page (#113). */
+      position: relative;
       /* No scrollbar-gutter here, unlike the regions inside. This box is the
          query container, and a reserved gutter comes out of the content box
          the query measures, so it would move the documented threshold by the
@@ -176,6 +180,11 @@ export class LcarsFrame extends LcarsElement {
     .slot-main,
     .slot-sidebar {
       scrollbar-gutter: stable;
+      /* An overflow box only clips absolutely positioned content it contains.
+         Without this, visually hidden text in a long table resolves against
+         the page, where it neither scrolls nor clips and stretches the
+         document past the footer (#113). */
+      position: relative;
     }
 
     /* Keyboard focus only. These regions are focusable so they can be scrolled

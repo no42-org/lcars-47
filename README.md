@@ -54,8 +54,8 @@ import { setLcarsTheme, playLcarsSound } from '@no42-org/lcars-47';
 If you would rather skip npm entirely, grab the two files straight from a release:
 
 ```html
-<link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.3/lcars.css" />
-<script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.3/lcars.iife.js"></script>
+<link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.5/lcars.css" />
+<script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.5/lcars.iife.js"></script>
 ```
 
 All custom elements are registered automatically, and the utility functions are available under `window.Lcars`.
@@ -72,10 +72,10 @@ For production, download the files and serve them yourself rather than hot-linki
   <head>
     <meta charset="UTF-8" />
     <title>LCARS Console</title>
-    <link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.3/lcars.css" />
+    <link rel="stylesheet" href="https://github.com/no42-org/lcars-47/releases/download/v0.1.5/lcars.css" />
     <!-- The IIFE bundle is self-contained. The ESM entry externalizes lit, so
          it needs a bundler (or an import map) rather than a plain script tag. -->
-    <script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.3/lcars.iife.js"></script>
+    <script src="https://github.com/no42-org/lcars-47/releases/download/v0.1.5/lcars.iife.js"></script>
   </head>
   <body>
     <lcars-frame theme="tng">
@@ -167,6 +167,11 @@ The frame is a **viewport shell**: it is exactly `--lcars-frame-height` tall (`1
 | the page itself | does not scroll — the frame already fills the viewport |
 
 That last row assumes the host page zeroes its body margin. A default document adds 8px around a `100dvh` frame, which is enough to make the page scroll on top of the frame's own scrolling regions.
+
+The frame, its `main` and `sidebar` regions, `<lcars-panel>` bodies and `<lcars-table>` scrollers are each the containing block for absolutely positioned content inside them.
+That content scrolls and clips with its region and cannot stretch the page.
+A menu or overlay that has to paint past a region needs `position: fixed` or a place outside the frame.
+A menu in the top bar that drops over `main` needs a `z-index`, because `main` paints after it.
 
 To put a frame inside a container instead of the viewport, set the property to a length:
 

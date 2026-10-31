@@ -214,6 +214,78 @@ describe('frame height contract', () => {
     expect(r.scrollHeight).toBeGreaterThan(r.clientHeight);
   });
 
+  it.each(['main', 'sidebar'])('keeps absolutely positioned %s content out of the document', async (slot) => {
+    const p = await openWorkbench(SHORT_VIEWPORT);
+    try {
+      const r = await p.evaluate(
+        ({ slot, height }) => {
+          const block = document.createElement('div');
+          block.setAttribute('slot', slot);
+          // Visually hidden text is the usual way this arrives: nothing on
+          // screen hints that it is stretching the page.
+          block.innerHTML = `<div style="height: ${height}px"></div><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">hidden</span>`;
+          const frame = document.querySelector('lcars-frame')!;
+          frame.appendChild(block);
+          const region = frame.shadowRoot!.querySelector(`.slot-${slot}`)!;
+          return {
+            documentHeight: document.documentElement.scrollHeight,
+            viewportHeight: window.innerHeight,
+            regionScrolls: region.scrollHeight > region.clientHeight,
+          };
+        },
+        { slot, height: TALL_BLOCK_PX }
+      );
+      expect(r.documentHeight).toBe(r.viewportHeight);
+      expect(r.regionScrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('anchors positioned content to its region in the narrow layout too', async () => {
+    const p = await openWorkbench(NARROW_VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const span = document.createElement('span');
+        span.setAttribute('slot', 'main');
+        span.style.cssText = 'position: absolute; top: 0';
+        const frame = document.querySelector('lcars-frame')!;
+        frame.appendChild(span);
+        return {
+          spanTop: span.getBoundingClientRect().top,
+          mainTop: frame.shadowRoot!.querySelector('.slot-main')!.getBoundingClientRect().top,
+        };
+      });
+      expect(r.spanTop).toBeCloseTo(r.mainTop, 0);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps positioned footer content inside a clamped frame', async () => {
+    // The footer is not a scrolling region, so only the clamped host can hold
+    // it. The grid stays viewport-tall here and the host cuts it off.
+    const p = await openWorkbench(SHORT_VIEWPORT);
+    try {
+      const r = await p.evaluate(() => {
+        const frame = document.querySelector('lcars-frame')!;
+        const cell = document.createElement('div');
+        cell.style.cssText = 'height: 400px;';
+        document.body.appendChild(cell);
+        cell.appendChild(frame);
+        const before = document.documentElement.scrollHeight;
+        const span = document.createElement('span');
+        span.setAttribute('slot', 'footer');
+        span.style.cssText = 'position: absolute; width: 1px; height: 1px; top: 2000px';
+        frame.appendChild(span);
+        return { before, after: document.documentElement.scrollHeight };
+      });
+      expect(r.after).toBe(r.before);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('stays inside a sized container when embedded with --lcars-frame-height', async () => {
     const p = await openWorkbench(SHORT_VIEWPORT);
     try {
@@ -610,6 +682,33 @@ describe('frame height contract', () => {
       expect(r.panelHeight).toBeGreaterThan(r.mainHeight);
       expect(r.panelBodyScrolls).toBe(false);
       expect(r.mainScrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps positioned content inside a bounded panel\'s own scroller', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const frame = document.querySelector('lcars-frame')!;
+        const panel = document.createElement('lcars-panel') as HTMLElement & {
+          updateComplete: Promise<unknown>;
+        };
+        panel.setAttribute('slot', 'main');
+        panel.style.height = '200px';
+        panel.innerHTML =
+          '<div style="height: 2000px"></div><span style="position: absolute; width: 1px; height: 1px">hidden</span>';
+        frame.appendChild(panel);
+        await panel.updateComplete;
+        const main = frame.shadowRoot!.querySelector('.slot-main')!;
+        // The workbench's own content already scrolls main, so the span is
+        // judged by what it adds.
+        const withSpan = main.scrollHeight;
+        panel.querySelector('span')!.remove();
+        return { withSpan, withoutSpan: main.scrollHeight };
+      });
+      expect(r.withSpan).toBe(r.withoutSpan);
     } finally {
       await p.close();
     }
@@ -1631,6 +1730,38 @@ describe('lcars-table', () => {
       expect(await p.locator('#table-contacts tbody tr td:nth-child(2)').first().textContent()).toContain(
         'Voyager'
       );
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps positioned cell content inside its own scroller', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const frame = document.querySelector('lcars-frame')!;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.setAttribute('slot', 'main');
+        table.style.cssText = 'width: 300px';
+        table.columns = [
+          {
+            key: 'wide',
+            label: 'WIDE',
+            render: () => {
+              const cell = document.createElement('div');
+              cell.innerHTML =
+                '<div style="width: 3000px"></div><span style="position: absolute; width: 1px; height: 1px; left: 2900px">hidden</span>';
+              return cell;
+            },
+          },
+        ];
+        table.rows = [{ wide: 'x' }];
+        frame.appendChild(table);
+        await table.updateComplete;
+        const main = frame.shadowRoot!.querySelector('.slot-main')!;
+        return { mainScrollWidth: main.scrollWidth, mainClientWidth: main.clientWidth };
+      });
+      expect(r.mainScrollWidth).toBeLessThanOrEqual(r.mainClientWidth);
     } finally {
       await p.close();
     }
