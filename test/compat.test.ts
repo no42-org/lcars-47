@@ -170,6 +170,69 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     }
   });
 
+  it('keeps a disabled keypad on the focus path and restores it', async () => {
+    // The same pair of engine disagreements as the chip above. Without a
+    // focusable surface every key is disabled and delegation has nowhere to go.
+    const p = await openWorkbench();
+    try {
+      await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.id = 'keypad-compat';
+        box.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999';
+        box.innerHTML =
+          '<input id="keypad-before" />' +
+          '<button id="keypad-plain"></button>' +
+          '<lcars-keypad></lcars-keypad>' +
+          '<input id="keypad-after" />';
+        document.body.prepend(box);
+        await (box.children[2] as HTMLElement & { updateComplete: Promise<unknown> })
+          .updateComplete;
+      });
+      const setDisabled = (disabled: boolean) =>
+        p.evaluate(async (disabled) => {
+          const keypad = document.querySelector('#keypad-compat lcars-keypad') as HTMLElement & {
+            disabled: boolean;
+            updateComplete: Promise<unknown>;
+          };
+          keypad.disabled = disabled;
+          await keypad.updateComplete;
+        }, disabled);
+      const focused = () =>
+        p.evaluate(() => {
+          const active = document.activeElement!;
+          const inner = active.shadowRoot?.activeElement as HTMLElement | null | undefined;
+          return inner?.dataset.key ?? (active.id || active.tagName);
+        });
+
+      // Whether Tab stops on a button depends on the platform, as for the chip.
+      await p.locator('#keypad-before').focus();
+      await p.keyboard.press('Tab');
+      const buttonsAreTabStops = (await focused()) === 'keypad-plain';
+      await p.locator('#keypad-plain').focus();
+      await p.keyboard.press('Tab');
+      expect(await focused(), `Tab into a keypad in ${engineName}`).toBe(
+        buttonsAreTabStops ? '1' : 'keypad-after'
+      );
+
+      await p.locator('#keypad-compat [data-key="5"]').focus();
+      await setDisabled(true);
+      expect(await focused(), `disable in ${engineName}`).toBe('LCARS-KEYPAD');
+      await setDisabled(false);
+      expect(await focused(), `re-enable in ${engineName}`).toBe('5');
+      await p.keyboard.press('Shift+Tab');
+      expect(await focused(), `Shift+Tab after re-enable in ${engineName}`).toBe(
+        buttonsAreTabStops ? '4' : 'keypad-before'
+      );
+
+      await p.locator('#keypad-compat [data-key="5"]').focus();
+      await setDisabled(true);
+      await p.keyboard.press('Tab');
+      expect(await focused(), `Tab from a disabled keypad in ${engineName}`).toBe('keypad-after');
+    } finally {
+      await p.close();
+    }
+  });
+
   it('centres Antonio capitals in a button label', async () => {
     // Font metrics are the category engines disagree on. The balance lives in
     // the font files; see src/tokens/fonts/README.md. This passes in Playwright

@@ -353,33 +353,49 @@ describe('<lcars-keypad>', () => {
       expect(playSpy).not.toHaveBeenCalled();
     });
 
-    it('reclaims focus instead of stranding it when disabled mid-focus', async () => {
+    it('hands focus to the grid and back to the same key across a disable', async () => {
       const pad = await mount();
       const key = keyButton(pad, '4');
       key.focus();
       expect(pad.shadowRoot?.activeElement).toBe(key);
 
-      // Where focus lands is the browser's business (happy-dom does not model
-      // blur-on-disable, and refuses focus() on anything carrying a `disabled`
-      // attribute), so pin the two steps the component owns: the focused key
-      // is released, and the keypad reclaims focus rather than leaving the
-      // user at the top of the document.
-      const focusSpy = vi.spyOn(pad, 'focus');
+      const grid = pad.shadowRoot?.querySelector<HTMLElement>('.keypad');
+      pad.disabled = true;
+      await pad.updateComplete;
+      expect(pad.shadowRoot?.activeElement).toBe(grid);
+
+      pad.disabled = false;
+      await pad.updateComplete;
+      expect(pad.shadowRoot?.activeElement).toBe(key);
+    });
+
+    it('offers the grid as a focus target only while disabled', async () => {
+      const pad = await mount();
+      const grid = pad.shadowRoot?.querySelector('.keypad');
+      expect(grid?.hasAttribute('tabindex')).toBe(false);
+
       pad.disabled = true;
       await pad.updateComplete;
 
-      expect(pad.shadowRoot?.activeElement).not.toBe(key);
-      expect(focusSpy).toHaveBeenCalledTimes(1);
+      expect(grid?.getAttribute('tabindex')).toBe('-1');
+
+      pad.disabled = false;
+      await pad.updateComplete;
+
+      expect(grid?.hasAttribute('tabindex')).toBe(false);
     });
 
     it('leaves focus alone when disabled while no key holds it', async () => {
       const pad = await mount();
-      const focusSpy = vi.spyOn(pad, 'focus');
+      const outside = document.createElement('input');
+      document.body.appendChild(outside);
+      outside.focus();
 
       pad.disabled = true;
       await pad.updateComplete;
 
-      expect(focusSpy).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
     });
 
     it('takes every key out of the tab order while disabled', async () => {
