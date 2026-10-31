@@ -185,6 +185,30 @@ describe('LCARS Geometric Framework Components', () => {
       await table.updateComplete;
       return table;
     }
+    it('renders the band header unless asked for the rule', async () => {
+      const table = await makeTable();
+      const element = table.shadowRoot?.querySelector('table');
+      expect(element?.classList.contains('rule')).toBe(false);
+
+      table.headerStyle = 'rule';
+      await table.updateComplete;
+
+      expect(element?.classList.contains('rule')).toBe(true);
+    });
+
+    it('marks only wrap columns as wrapping', async () => {
+      const table = await makeTable();
+      table.columns = [
+        { key: 'a', label: 'A', wrap: true },
+        { key: 'b', label: 'B', mono: true },
+      ];
+      await table.updateComplete;
+
+      const cells = table.shadowRoot?.querySelectorAll('tbody tr:first-child td');
+      expect(cells?.[0].className.trim()).toBe('wrap');
+      expect(cells?.[1].className.trim()).toBe('mono');
+    });
+
     const headerOf = (table: LcarsTable, index: number) =>
       table.shadowRoot?.querySelectorAll('th')[index] as HTMLElement;
     const sortBy = async (table: LcarsTable, index: number) => {

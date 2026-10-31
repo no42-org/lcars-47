@@ -261,9 +261,10 @@ Disabling a chip that holds focus leaves focus on the chip, so the next Tab resu
 Re-enabling it returns focus to the toggle control.
 
 ### `<lcars-table>`
-Data table with sortable headers, scrolling horizontally inside its own box. The table owns sorting: give it the data and it reorders rows itself.
-- **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`.
-- **Column**: `key`, `label`, `sortable`, `align` (`'start' | 'center' | 'end'`), `mono`, `render(row)` (returns a string, a DOM node or a Lit template).
+Data table with sortable headers. It scrolls wide content inside its own box and, given a height, scrolls its rows under a fixed header. The table owns sorting: give it the data and it reorders rows itself.
+- **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`, `header-style` (`'band' | 'rule'`, default `'band'`).
+- **Column**: `key`, `label`, `sortable`, `align` (`'start' | 'center' | 'end'`), `mono`, `wrap`, `render(row)` (returns a string, a DOM node or a Lit template).
+- **Custom properties**: `--lcars-table-header-backing` (colour behind the header, default transparent for `band` and `--lcars-color-bg` for `rule`).
 - **Events**: `lcars-sort` (CustomEvent with `{ key, direction }`). It bubbles and crosses shadow boundaries.
 
 ```typescript
@@ -277,12 +278,25 @@ table.rows = [{ name: 'Enterprise', warp: 9.6 }, { name: 'Defiant', warp: 9.5 }]
 
 Assign a new `rows` array to update the table. Changes made in place are not seen.
 Numbers sort numerically and other values as text in numeric order. Dates sort by time. Empty values (`null`, `undefined`, `''`, `NaN`) sort last in both directions.
-Cells do not wrap, so wide content scrolls.
+Cells do not wrap unless their column sets `wrap`, so wide content scrolls.
+A `wrap` column stops narrowing at its header label or its longest word, so a long URL can still scroll sideways. Set `min-width` on rendered content to raise that floor.
 `render` runs on every update when it returns a string or a Lit template. A template updates in place and keeps focus. A re-sort leaves its elements in their position and gives them the new row's values.
 A single DOM node is kept for its row object and column, and `render` does not run again for that cell, so a control in it keeps its value and focus through updates. A fragment or an array of nodes is not kept.
 A kept node does not see a change to its row object, or to anything else `render` reads. Replace the row object to get a new node. Assigning `columns` renews every node.
 A re-sort moves a kept node with its row. It keeps its value, but a focused control in a row that moves loses focus.
 The scroll region is a tab stop only while its content overflows.
+
+**Fixed header.** Give the table a `height` or `max-height` and its rows scroll under the header. A table with neither is as tall as its rows and the header scrolls with the page. Inside a pinned frame, let the table fill what is left of `main`:
+
+```css
+lcars-table {
+  flex: 1 1 auto;
+  min-height: 12rem;
+}
+```
+
+The `min-height` is the smallest table you accept. Below it `main` scrolls instead. A stacked narrow frame has no height to fill, so the table shows every row there.
+Set `--lcars-table-header-backing` to the colour behind the table. On a scrolling `band` table it hides rows at the band's rounded corners. A `rule` header is opaque and uses `--lcars-color-bg` by default, which shows as a strip on any other surface.
 
 ### `<lcars-keypad>`
 Authentic LCARS key grid for numeric codes and command sequences, with per-keypress procedural audio.

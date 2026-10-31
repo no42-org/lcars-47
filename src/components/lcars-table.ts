@@ -11,6 +11,7 @@ import { LcarsElement } from './base';
 export type LcarsTableRow = object;
 export type LcarsTableAlign = 'start' | 'center' | 'end';
 export type LcarsTableSortDirection = 'ascending' | 'descending';
+export type LcarsTableHeaderStyle = 'band' | 'rule';
 
 export interface LcarsTableColumn {
   /** Property of the row this column shows and sorts by. */
@@ -21,6 +22,8 @@ export interface LcarsTableColumn {
   align?: LcarsTableAlign;
   /** Sets the column in the monospace font. */
   mono?: boolean;
+  /** Lets cell text wrap. Other cells stay on one line. */
+  wrap?: boolean;
   /**
    * Cell content: a string, a DOM node or a Lit template. Defaults to the row's
    * value. A single DOM node is kept for its row object and column, so this
@@ -54,8 +57,9 @@ function compareValues(a: unknown, b: unknown): number {
 }
 
 /**
- * `<lcars-table>` renders tabular data with sortable headers, scrolling
- * horizontally inside its own box.
+ * `<lcars-table>` renders tabular data with sortable headers. It scrolls wide
+ * content inside its own box and, given a height, scrolls its rows under a
+ * fixed header.
  */
 export class LcarsTable extends LcarsElement {
   static override styles = css`
@@ -63,8 +67,12 @@ export class LcarsTable extends LcarsElement {
       display: none;
     }
 
+    /* A flex column so the scroller shrinks into whatever bounds the host, be
+       it height, max-height or flex sizing. A percentage only answers to the
+       first of those. */
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
       box-sizing: border-box;
       min-width: 0;
       max-width: 100%;
@@ -74,16 +82,23 @@ export class LcarsTable extends LcarsElement {
        box clips at its padding edge, so a control in a cell at the edge would
        otherwise lose part of its outline. */
     .scroll {
-      overflow-x: auto;
+      --scroll-padding: calc(var(--lcars-border-width, 3px) + 2px);
+      overflow: auto;
+      min-height: 0;
       /* Positioned content is only clipped by a scroller that contains it. */
       position: relative;
-      padding: calc(var(--lcars-border-width, 3px) + 2px);
+      padding: var(--scroll-padding);
       box-sizing: border-box;
     }
 
     .scroll:focus-visible {
       outline: 2px solid var(--lcars-color-primary, #ff9900);
       outline-offset: -2px;
+    }
+
+    /* The ring is drawn inside the box, where a stuck header would cover it. */
+    .scroll:focus-visible th {
+      top: calc(2px - var(--scroll-padding));
     }
 
     table {
@@ -104,26 +119,64 @@ export class LcarsTable extends LcarsElement {
       vertical-align: baseline;
     }
 
+    /* Its own stacking context, or a raised control in a cell paints across the
+       fixed header. */
+    tbody {
+      isolation: isolate;
+    }
+
+    /* Sticks past the scroller's padding: at 0 rows pass through that padding
+       above the header. Rows paint over a sticky cell without the z-index. */
     th {
-      background-color: var(--table-color);
+      position: sticky;
+      top: calc(-1 * var(--scroll-padding));
+      z-index: 1;
+      background-color: var(--lcars-table-header-backing, transparent);
       color: var(--lcars-color-on-accent, #000000);
       font-size: var(--lcars-font-size-xs, 0.75rem);
       font-weight: bold;
       text-transform: uppercase;
     }
 
-    th:first-child {
+    /* The band sits here so the cell behind it can be opaque: a rounded fill on
+       the cell itself leaves rows showing at the corners. */
+    th::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-color: var(--table-color);
+    }
+
+    th:first-child::before {
       border-top-left-radius: var(--lcars-radius-sm, 6px);
       border-bottom-left-radius: var(--lcars-radius-sm, 6px);
     }
 
-    th:last-child {
+    th:last-child::before {
       border-top-right-radius: var(--lcars-radius-sm, 6px);
       border-bottom-right-radius: var(--lcars-radius-sm, 6px);
     }
 
+    /* Opaque by default, unlike the band: labels over passing rows are
+       unreadable. A shadow, because a collapsed border stays with the table
+       rather than travelling with a sticky cell. */
+    table.rule th {
+      background-color: var(--lcars-table-header-backing, var(--lcars-color-bg));
+      color: var(--table-color);
+      box-shadow: inset 0 -2px 0 var(--table-color);
+    }
+
+    table.rule th::before {
+      content: none;
+    }
+
     td {
       border-bottom: var(--lcars-border-width-sm, 1.5px) solid var(--lcars-color-surface);
+    }
+
+    td.wrap {
+      white-space: normal;
     }
 
     td.mono {
@@ -195,6 +248,10 @@ export class LcarsTable extends LcarsElement {
 
   @property({ type: String })
   color = 'primary';
+
+  /** `band` fills the header with `color`. `rule` sets its text over a thin rule. */
+  @property({ type: String, attribute: 'header-style' })
+  headerStyle: LcarsTableHeaderStyle = 'band';
 
   /** Accessible name of the table and its scroll region. */
   @property({ type: String })
@@ -305,7 +362,7 @@ export class LcarsTable extends LcarsElement {
   private renderCell(column: LcarsTableColumn, content: unknown): TemplateResult {
     return html`
       <td
-        class="${column.mono ? 'mono' : ''}"
+        class="${[column.mono && 'mono', column.wrap && 'wrap'].filter(Boolean).join(' ')}"
         style="--cell-align: ${column.align ?? 'start'};"
       >
         ${content}
@@ -332,7 +389,10 @@ export class LcarsTable extends LcarsElement {
   // keeps it until blur, because removing it would drop keyboard focus.
   private syncTabStop(): void {
     const box = this.scrollBox;
-    if (box && box.scrollWidth > box.clientWidth) {
+    // Scrolling focus into view stops at the box's edge otherwise, which puts
+    // the control under the header.
+    box?.style.setProperty('scroll-padding-top', `${box.querySelector('thead')?.offsetHeight ?? 0}px`);
+    if (box && (box.scrollWidth > box.clientWidth || box.scrollHeight > box.clientHeight)) {
       box.setAttribute('tabindex', '0');
     } else if (this.shadowRoot?.activeElement !== box) {
       box?.removeAttribute('tabindex');
@@ -390,7 +450,7 @@ export class LcarsTable extends LcarsElement {
         style="--table-color: ${tableColor};"
         @blur=${this.syncTabStop}
       >
-        <table aria-label="${this.label}">
+        <table class="${this.headerStyle === 'rule' ? 'rule' : nothing}" aria-label="${this.label}">
           <thead>
             <tr>
               ${this.columns.map((column) => this.renderHeader(column))}
