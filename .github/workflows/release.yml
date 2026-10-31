@@ -97,7 +97,7 @@ jobs:
         with:
           sbom: release/lcars-47-${{ steps.version.outputs.version }}-sbom.cdx.json
           output: release/lcars-47-${{ steps.version.outputs.version }}-sbom-report.html
-          image: ghcr.io/no42-org/blitsbom@sha256:82cf7a7b5a6e8abaf341c3afe7b8e184e0511af9b7d9d345d0afb37ffef41baa # report-0.8.6
+          image: ghcr.io/no42-org/blitsbom@sha256:bebd611fd458b87c2ea284f89fdd21320ccd32d168c72b04d9c3fbf8785049b2 # report-0.9.2
 
       - name: Checksums and signature
         run: |
