@@ -79,5 +79,10 @@
   "author": "Ronny Trommer <ronny@no42.org>",
   "dependencies": {
     "lit": "^3.3.3"
+  },
+  "overrides": {
+    "@microsoft/api-extractor": {
+      "minimatch": "^11.0.3"
+    }
   }
 }
