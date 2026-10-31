@@ -265,6 +265,23 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     }
   });
 
+  it('keeps positioned main content from stretching the document', async () => {
+    const p = await openWorkbench();
+    try {
+      const r = await p.evaluate(() => {
+        const block = document.createElement('div');
+        block.setAttribute('slot', 'main');
+        block.innerHTML =
+          '<div style="height: 2000px"></div><span style="position: absolute; width: 1px; height: 1px">hidden</span>';
+        document.querySelector('lcars-frame')!.appendChild(block);
+        return { documentHeight: document.documentElement.scrollHeight, viewportHeight: window.innerHeight };
+      });
+      expect(r.documentHeight, `document grew in ${engineName}`).toBe(r.viewportHeight);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('stacks an embedded frame in a narrow container and pins it in a wide one', async () => {
     // The container-query breakpoint, which answers to the frame's own width.
     // Keyed to the viewport this fails in opposite directions in the two

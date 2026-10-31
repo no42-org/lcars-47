@@ -87,6 +87,8 @@ export class LcarsPanel extends LcarsElement {
          container's overflow: hidden simply cuts it off, trading painting
          over the neighbours for hiding the panel's own content. */
       overflow: auto;
+      /* Positioned content is only clipped by a scroller that contains it. */
+      position: relative;
       min-height: 0;
     }
   `;
