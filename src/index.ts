@@ -34,6 +34,7 @@ import {
   type LcarsTableRow,
   type LcarsTableAlign,
   type LcarsTableSortDirection,
+  type LcarsTableHeaderStyle,
   type LcarsSortEventDetail,
 } from './components/lcars-table';
 
@@ -96,6 +97,7 @@ export {
   type LcarsTableRow,
   type LcarsTableAlign,
   type LcarsTableSortDirection,
+  type LcarsTableHeaderStyle,
   type LcarsSortEventDetail,
 };
 

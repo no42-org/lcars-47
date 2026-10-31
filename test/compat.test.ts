@@ -106,6 +106,38 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
     }
   });
 
+  it('keeps a table header fixed over a scrolled body', async () => {
+    const p = await openWorkbench();
+    try {
+      const r = await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999; width: 600px; height: 200px';
+        const table = document.createElement('lcars-table') as HTMLElement & {
+          columns: unknown[];
+          rows: unknown[];
+          updateComplete: Promise<unknown>;
+        };
+        table.style.height = '100%';
+        table.columns = [{ key: 'name', label: 'NAME' }];
+        table.rows = Array.from({ length: 20 }, (_, i) => ({ name: `Contact ${i}` }));
+        box.appendChild(table);
+        document.body.appendChild(box);
+        await table.updateComplete;
+        const scroll = table.shadowRoot!.querySelector('.scroll')!;
+        scroll.scrollTop = scroll.scrollHeight;
+        await new Promise(requestAnimationFrame);
+        return {
+          scrolled: scroll.scrollTop > 0,
+          gap: table.shadowRoot!.querySelector('th')!.getBoundingClientRect().top - box.getBoundingClientRect().top,
+        };
+      });
+      expect(r.scrolled, `table did not scroll in ${engineName}`).toBe(true);
+      expect(Math.abs(r.gap), `header moved in ${engineName}`).toBeLessThanOrEqual(1);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('keeps a disabled chip on the focus path and restores it', async () => {
     // Engines disagree on both halves: what happens to focus on a button that
     // becomes disabled, and whether a delegatesFocus host with nothing left to

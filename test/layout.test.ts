@@ -1718,6 +1718,361 @@ describe('lcars-table', () => {
     }
   });
 
+  /** Twenty rows in a table appended to `#fixed-box`, with the given box and table setup. */
+  async function mountLongTable(
+    p: Page,
+    { box = 'height: 200px; width: 600px', attributes = {} as Record<string, string> } = {}
+  ) {
+    await p.evaluate(
+      async ({ box, attributes }) => {
+        const host = document.createElement('div');
+        host.id = 'fixed-box';
+        host.style.cssText = `position: fixed; top: 0; left: 0; z-index: 9999; ${box}`;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.style.height = '100%';
+        for (const [name, value] of Object.entries(attributes)) table.setAttribute(name, value);
+        table.columns = [{ key: 'name', label: 'NAME' }];
+        table.rows = Array.from({ length: 20 }, (_, i) => ({ name: `Contact ${i}` }));
+        host.appendChild(table);
+        document.body.appendChild(host);
+        await table.updateComplete;
+      },
+      { box, attributes }
+    );
+  }
+
+  /** Scrolls to the end, then reports what paints where the header should be. */
+  const scrollToEnd = (p: Page) =>
+    p.evaluate(async () => {
+      const root = document.querySelector('#fixed-box lcars-table')!.shadowRoot!;
+      const scroll = root.querySelector('.scroll')!;
+      scroll.scrollTop = scroll.scrollHeight;
+      await new Promise(requestAnimationFrame);
+      const box = scroll.getBoundingClientRect();
+      const header = root.querySelector('th')!.getBoundingClientRect();
+      const at = (x: number, y: number) => root.elementFromPoint(x, y)?.closest('th, td')?.tagName;
+      return {
+        scrolled: scroll.scrollTop > 0,
+        gapAboveHeader: header.top - box.top,
+        topEdge: at(box.left + 40, box.top + 1),
+        headerCell: at(box.left + 40, header.top + header.height / 2),
+        ruleShadow: getComputedStyle(root.querySelector('th')!).boxShadow,
+      };
+    });
+
+  it.each([
+    ['band', {}],
+    ['rule', { 'header-style': 'rule' }],
+  ])('keeps a %s header fixed over a scrolled body', async (_, attributes) => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p, { attributes });
+      const r = await scrollToEnd(p);
+      expect(r.scrolled).toBe(true);
+      expect(r.gapAboveHeader).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+      expect(r.topEdge).toBe('TH');
+      expect(r.headerCell).toBe('TH');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('draws the rule on a scrolled header', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p, { attributes: { 'header-style': 'rule' } });
+      expect((await scrollToEnd(p)).ruleShadow).toContain('inset');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('hides rows behind the corners of a band header given a backing', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p);
+      await p.evaluate(() => {
+        const table = document.querySelector('#fixed-box lcars-table') as HTMLElement;
+        table.style.setProperty('--lcars-table-header-backing', 'rgb(1, 2, 3)');
+      });
+      await scrollToEnd(p);
+      const header = (await p.locator('#fixed-box th').first().boundingBox())!;
+      const shot = await p.screenshot({ clip: header });
+      const pixels = await p.evaluate(async (png) => {
+        const bytes = Uint8Array.from(atob(png), (c) => c.charCodeAt(0));
+        const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext('2d')!;
+        context.drawImage(bitmap, 0, 0);
+        const at = (x: number, y: number) => [...context.getImageData(x, y, 1, 1).data].slice(0, 3);
+        return { corner: at(0, 0), middle: at(Math.floor(bitmap.width / 2), 1) };
+      }, shot.toString('base64'));
+      // Inside the radius the backing shows, and a row would show without it.
+      expect(pixels.corner).toEqual([1, 2, 3]);
+      expect(pixels.middle).not.toEqual([1, 2, 3]);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it.each([
+    ['height', 'height: 300px'],
+    ['max-height', 'max-height: 300px'],
+  ])('scrolls inside a %s set on the table itself', async (_, sizing) => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p, { box: 'width: 600px' });
+      const r = await p.evaluate((sizing) => {
+        const table = document.querySelector('#fixed-box lcars-table') as HTMLElement;
+        table.style.cssText = sizing;
+        const scroll = table.shadowRoot!.querySelector('.scroll')!;
+        return {
+          hostHeight: table.getBoundingClientRect().height,
+          boxHeight: scroll.getBoundingClientRect().height,
+          scrolls: scroll.scrollHeight > scroll.clientHeight,
+        };
+      }, sizing);
+      expect(r.hostHeight).toBe(300);
+      expect(r.boxHeight).toBe(300);
+      expect(r.scrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('stops a control scrolled into view below the header, not under it', async () => {
+    // `nearest` is how moving focus up a table scrolls: the control stops at
+    // the box's top edge, which is where the header sits.
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const found = await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999; width: 600px; height: 200px';
+        const table = document.createElement('lcars-table') as TableElement;
+        table.style.height = '100%';
+        table.columns = [
+          { key: 'name', label: 'NAME', render: () => document.createElement('input') },
+        ];
+        table.rows = Array.from({ length: 20 }, (_, i) => ({ name: i }));
+        box.appendChild(table);
+        document.body.appendChild(box);
+        await table.updateComplete;
+        const root = table.shadowRoot!;
+        const scroll = root.querySelector('.scroll')!;
+        scroll.scrollTop = scroll.scrollHeight;
+        await new Promise(requestAnimationFrame);
+        const input = root.querySelectorAll('input')[5];
+        input.scrollIntoView({ block: 'nearest' });
+        await new Promise(requestAnimationFrame);
+        const rect = input.getBoundingClientRect();
+        return root.elementFromPoint(rect.left + 5, rect.top + 2)?.tagName;
+      });
+      expect(found).toBe('INPUT');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps the scroll region focus ring above a stuck header', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p);
+      await p.waitForFunction(
+        () =>
+          document
+            .querySelector('#fixed-box lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!
+            .getAttribute('tabindex') === '0'
+      );
+      // Tab, because only keyboard focus draws the ring.
+      await p.locator('#fixed-box .scroll').evaluate((el: HTMLElement) => (el.scrollTop = 500));
+      await p.evaluate(() => {
+        const before = document.createElement('button');
+        before.id = 'before-table';
+        document.getElementById('fixed-box')!.prepend(before);
+        before.focus();
+      });
+      await p.keyboard.press('Tab');
+      await expect
+        .poll(() =>
+          p.evaluate(() => {
+            const root = document.querySelector('#fixed-box lcars-table')!.shadowRoot!;
+            const scroll = root.querySelector('.scroll')!;
+            const gap = root.querySelector('th')!.getBoundingClientRect().top - scroll.getBoundingClientRect().top;
+            return scroll.matches(':focus-visible') ? gap : null;
+          })
+        )
+        .toBeGreaterThanOrEqual(2);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps positioned cell content under the header', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999; width: 600px; height: 200px';
+        const table = document.createElement('lcars-table') as TableElement;
+        table.style.height = '100%';
+        table.columns = [
+          {
+            key: 'name',
+            label: 'NAME',
+            render: () => {
+              const raised = document.createElement('div');
+              raised.textContent = 'raised';
+              raised.style.cssText = 'position: relative; z-index: 5; height: 80px';
+              return raised;
+            },
+          },
+        ];
+        table.rows = Array.from({ length: 20 }, (_, i) => ({ name: i }));
+        box.appendChild(table);
+        document.body.appendChild(box);
+        await table.updateComplete;
+        const root = table.shadowRoot!;
+        const scroll = root.querySelector('.scroll')!;
+        scroll.scrollTop = 40;
+        await new Promise(requestAnimationFrame);
+        const header = root.querySelector('th')!.getBoundingClientRect();
+        return root.elementFromPoint(header.left + 12, header.top + header.height / 2)?.closest('th')?.tagName;
+      });
+      expect(r).toBe('TH');
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('leaves an unbounded table as tall as its rows', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p, { box: 'width: 600px' });
+      const r = await p.evaluate(() => {
+        const scroll = document.querySelector('#fixed-box lcars-table')!.shadowRoot!.querySelector('.scroll')!;
+        return { scrollHeight: scroll.scrollHeight, clientHeight: scroll.clientHeight };
+      });
+      expect(r.scrollHeight).toBe(r.clientHeight);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('lets the keyboard reach and scroll a table that only overflows vertically', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p);
+      await p.waitForFunction(
+        () =>
+          document
+            .querySelector('#fixed-box lcars-table')!
+            .shadowRoot!.querySelector('.scroll')!
+            .getAttribute('tabindex') === '0'
+      );
+      const scroll = p.locator('#fixed-box .scroll');
+      await scroll.focus();
+      await p.keyboard.press('ArrowDown');
+      await expect.poll(() => scroll.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    } finally {
+      await p.close();
+    }
+  });
+
+  /** A 200-row table in `main` using the README's fill recipe, after a sibling of the given height. */
+  const measureFilledTable = (p: Page, siblingHeight: number) =>
+    p.evaluate(
+      async (siblingHeight) => {
+        const frame = document.querySelector('lcars-frame')!;
+        for (const child of frame.querySelectorAll('[slot="main"]')) child.remove();
+        const intro = document.createElement('div');
+        intro.setAttribute('slot', 'main');
+        intro.style.height = `${siblingHeight}px`;
+        const table = document.createElement('lcars-table') as TableElement;
+        table.setAttribute('slot', 'main');
+        table.style.cssText = 'flex: 1 1 auto; min-height: 12rem';
+        table.columns = [{ key: 'name', label: 'NAME' }];
+        table.rows = Array.from({ length: 200 }, (_, i) => ({ name: `Contact ${i}` }));
+        frame.append(intro, table);
+        await table.updateComplete;
+        await new Promise(requestAnimationFrame);
+        const root = frame.shadowRoot!;
+        const main = root.querySelector('.slot-main')!;
+        const scroll = table.shadowRoot!.querySelector('.scroll')!;
+        return {
+          tableHeight: table.getBoundingClientRect().height,
+          mainScrolls: main.scrollHeight > main.clientHeight,
+          tableScrolls: scroll.scrollHeight > scroll.clientHeight,
+          footerBottom: root.querySelector('.slot-footer-row')!.getBoundingClientRect().bottom,
+          documentHeight: document.documentElement.scrollHeight,
+          viewportHeight: window.innerHeight,
+        };
+      },
+      siblingHeight
+    );
+
+  it('fills what is left of a pinned frame and scrolls there', async () => {
+    const p = await openWorkbench(SHORT_VIEWPORT);
+    try {
+      const r = await measureFilledTable(p, 120);
+      expect(r.mainScrolls).toBe(false);
+      expect(r.tableScrolls).toBe(true);
+      expect(r.footerBottom).toBeLessThanOrEqual(r.viewportHeight);
+      expect(r.documentHeight).toBe(r.viewportHeight);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('keeps its minimum height when a sibling takes all of main', async () => {
+    const p = await openWorkbench(SHORT_VIEWPORT);
+    try {
+      const r = await measureFilledTable(p, 2000);
+      expect(r.tableHeight).toBeGreaterThan(150);
+      expect(r.tableScrolls).toBe(true);
+      expect(r.mainScrolls).toBe(true);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('shows every row in a stacked frame, where nothing bounds it', async () => {
+    const p = await openWorkbench(NARROW_VIEWPORT);
+    try {
+      const r = await measureFilledTable(p, 120);
+      expect(r.tableHeight).toBeGreaterThan(1000);
+      expect(r.tableScrolls).toBe(false);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('wraps a wrap column instead of scrolling sideways', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      const r = await p.evaluate(async () => {
+        const box = document.createElement('div');
+        box.style.cssText = 'position: fixed; top: 0; left: 0; width: 400px';
+        const table = document.createElement('lcars-table') as TableElement;
+        table.columns = [
+          { key: 'id', label: 'ID' },
+          { key: 'what', label: 'WHAT', wrap: true },
+        ];
+        table.rows = [{ id: '#19', what: 'minimatch advisory. '.repeat(20) }];
+        box.appendChild(table);
+        document.body.appendChild(box);
+        await table.updateComplete;
+        const scroll = table.shadowRoot!.querySelector('.scroll')!;
+        return { scrollWidth: scroll.scrollWidth, clientWidth: scroll.clientWidth };
+      });
+      expect(r.scrollWidth).toBeLessThanOrEqual(r.clientWidth);
+    } finally {
+      await p.close();
+    }
+  });
+
   it('sorts from the keyboard', async () => {
     const p = await openWorkbench(VIEWPORT);
     try {
