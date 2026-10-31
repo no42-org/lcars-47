@@ -75,6 +75,8 @@ export class LcarsTable extends LcarsElement {
        otherwise lose part of its outline. */
     .scroll {
       overflow-x: auto;
+      /* Positioned content is only clipped by a scroller that contains it. */
+      position: relative;
       padding: calc(var(--lcars-border-width, 3px) + 2px);
       box-sizing: border-box;
     }

@@ -168,6 +168,11 @@ The frame is a **viewport shell**: it is exactly `--lcars-frame-height` tall (`1
 
 That last row assumes the host page zeroes its body margin. A default document adds 8px around a `100dvh` frame, which is enough to make the page scroll on top of the frame's own scrolling regions.
 
+The frame, its `main` and `sidebar` regions, `<lcars-panel>` bodies and `<lcars-table>` scrollers are each the containing block for absolutely positioned content inside them.
+That content scrolls and clips with its region and cannot stretch the page.
+A menu or overlay that has to paint past a region needs `position: fixed` or a place outside the frame.
+A menu in the top bar that drops over `main` needs a `z-index`, because `main` paints after it.
+
 To put a frame inside a container instead of the viewport, set the property to a length:
 
 ```html
