@@ -38,6 +38,7 @@ import {
   openWorkbenchPage,
   probesFindComponentOutside,
   measureWideTable,
+  measureElbowLabel,
 } from './browser';
 
 const VIEWPORT = { width: 1440, height: 900 };
@@ -1009,6 +1010,40 @@ describe('elbow slotted content', () => {
       expect(below).toEqual(knownGaps);
     }
   );
+});
+
+describe('elbow label inset', () => {
+  const ORIENTATIONS = ['top-left', 'bottom-left', 'top-right', 'bottom-right'];
+
+  it.each(ORIENTATIONS)('clears a two-value radius by its horizontal value (%s)', async (orientation) => {
+    const r = await measureElbowLabel(page, orientation, '170px 100px', '300px');
+    expect(r.archWidth).toBe(300);
+    expect(Math.abs(r.inset - 170)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
+
+  it.each(ORIENTATIONS)('keeps the label inside an arch narrower than the radius (%s)', async (orientation) => {
+    // Padding was a floor on the arch's width, so this grew the arch out of line
+    // with its column and left the label under the bar, which paints later.
+    for (const radius of ['170px 100px', '170px']) {
+      const r = await measureElbowLabel(page, orientation, radius);
+      expect(r.archWidth, radius).toBe(160);
+      // Past the 8px the arch keeps on its far side, and clear of the corner.
+      expect(r.spare, radius).toBeGreaterThanOrEqual(8);
+      expect(r.inset, radius).toBeGreaterThanOrEqual(60);
+    }
+  });
+
+  it.each(ORIENTATIONS)('holds the inset against a label too long for the arch (%s)', async (orientation) => {
+    // A long label overruns the far side. It must not slide into the curve.
+    const r = await measureElbowLabel(page, orientation, '28px', undefined, 'ENGINEERING SECTION 04');
+    expect(r.spare).toBeLessThan(8);
+    expect(Math.abs(r.inset - 28)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
+
+  it.each(ORIENTATIONS)('still insets by a single value (%s)', async (orientation) => {
+    const r = await measureElbowLabel(page, orientation, '40px');
+    expect(Math.abs(r.inset - 40)).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
+  });
 });
 
 describe('heading clip boxes', () => {

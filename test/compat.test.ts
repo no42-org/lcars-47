@@ -33,6 +33,7 @@ import {
   openWorkbenchPage,
   probesFindComponentOutside,
   measureWideTable,
+  measureElbowLabel,
 } from './browser';
 
 const ENGINES = [
@@ -91,6 +92,20 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
       for (const [tag, size] of Object.entries(sizes)) {
         expect(size.width, `${tag} collapsed to zero width in ${engineName}`).toBeGreaterThan(0);
         expect(size.height, `${tag} collapsed to zero height in ${engineName}`).toBeGreaterThan(0);
+      }
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('insets an elbow label by the first value of a two-value radius', async () => {
+    // The inset depends on how a shorthand expands a substituted variable, so
+    // an engine that orders it differently would lose the label again.
+    const p = await openWorkbench();
+    try {
+      for (const orientation of ['bottom-left', 'top-right']) {
+        const r = await measureElbowLabel(p, orientation, '170px 100px', '300px');
+        expect(Math.abs(r.inset - 170), orientation).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
       }
     } finally {
       await p.close();
