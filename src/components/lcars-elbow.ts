@@ -60,6 +60,31 @@ export class LcarsElbow extends LcarsElement {
       flex: 0 0 auto;
     }
 
+    /* Clears the corner curve on the rounded side, or the label is cut by it.
+       A spacer rather than padding, because padding is a floor on the arch's
+       width. The cap keeps room for a typical label beside a radius too wide
+       for the arch. It is a cap and not a shrink so that a label too long for
+       the arch cannot eat the inset and slide into the curve. */
+    .label-inset {
+      flex: none;
+      max-width: max(50%, 100% - 5.5rem);
+    }
+
+    .elbow-container.top-right .label-inset,
+    .elbow-container.bottom-right .label-inset {
+      order: 1;
+    }
+
+    /* The radius may be two values. The shorthand hands the first, horizontal
+       one to the start side and the longhand drops the second, which no plain
+       length could do: var() cannot pick one token out of a value. */
+    .label-inset::before {
+      content: '';
+      display: block;
+      padding-inline: var(--lcars-radius-elbow, 28px);
+      padding-inline-end: 0;
+    }
+
     /* Let a squeezed elbow pass the squeeze down to the heading, where the
        ellipsis below can act on it, instead of overflowing its own host. */
     .top-row,
@@ -101,8 +126,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
-      /* Clear the corner curve on the rounded side, or the label is cut by it. */
-      padding: 0 var(--lcars-gap-md, 8px) 0 var(--lcars-radius-elbow, 28px);
+      padding: 0 var(--lcars-gap-md, 8px) 0 0;
       box-sizing: border-box;
     }
 
@@ -144,7 +168,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-end;
       justify-content: flex-start;
-      padding: 0 var(--lcars-gap-md, 8px) 0 var(--lcars-radius-elbow, 28px);
+      padding: 0 var(--lcars-gap-md, 8px) 0 0;
       box-sizing: border-box;
     }
 
@@ -187,7 +211,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-start;
       justify-content: flex-end;
-      padding: 0 var(--lcars-radius-elbow, 28px) 0 var(--lcars-gap-md, 8px);
+      padding: 0 0 0 var(--lcars-gap-md, 8px);
       box-sizing: border-box;
     }
 
@@ -231,7 +255,7 @@ export class LcarsElbow extends LcarsElement {
       display: flex;
       align-items: flex-end;
       justify-content: flex-end;
-      padding: 0 var(--lcars-radius-elbow, 28px) 0 var(--lcars-gap-md, 8px);
+      padding: 0 0 0 var(--lcars-gap-md, 8px);
       box-sizing: border-box;
     }
 
@@ -319,6 +343,7 @@ export class LcarsElbow extends LcarsElement {
       >
         <div class="${rowClass}">
           <div class="arch">
+            <span class="label-inset"></span>
             <slot name="label">
               ${this.label ? html`<span class="label-text">${this.label}</span>` : ''}
             </slot>

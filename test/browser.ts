@@ -159,3 +159,47 @@ export async function probesFindComponentOutside(
     { selector, build }
   );
 }
+
+/**
+ * Where an elbow's label lands for a given corner radius. `inset` runs from the
+ * arch's rounded side to the label, `spare` from the label to the far side, so
+ * a negative `spare` means the label left the arch.
+ */
+export async function measureElbowLabel(
+  page: Page,
+  orientation: string,
+  radius: string,
+  elbowWidth?: string,
+  label = '02-654598'
+): Promise<{ archWidth: number; inset: number; spare: number }> {
+  return page.evaluate(
+    async ({ orientation, radius, elbowWidth, label }) => {
+      const elbow = document.createElement('lcars-elbow') as HTMLElement & {
+        updateComplete: Promise<unknown>;
+      };
+      elbow.setAttribute('orientation', orientation);
+      elbow.setAttribute('label', label);
+      elbow.style.display = 'block';
+      elbow.style.setProperty('--lcars-radius-elbow', radius);
+      if (elbowWidth) elbow.style.setProperty('--lcars-elbow-width', elbowWidth);
+      document.body.appendChild(elbow);
+      try {
+        await elbow.updateComplete;
+        await document.fonts.ready;
+        const arch = elbow.shadowRoot!.querySelector('.arch')!.getBoundingClientRect();
+        const text = elbow.shadowRoot!.querySelector('.label-text')!.getBoundingClientRect();
+        const fromLeft = text.left - arch.left;
+        const fromRight = arch.right - text.right;
+        const onLeft = orientation.endsWith('left');
+        return {
+          archWidth: arch.width,
+          inset: onLeft ? fromLeft : fromRight,
+          spare: onLeft ? fromRight : fromLeft,
+        };
+      } finally {
+        elbow.remove();
+      }
+    },
+    { orientation, radius, elbowWidth, label }
+  );
+}

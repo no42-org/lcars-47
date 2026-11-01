@@ -224,6 +224,11 @@ The arch is as wide as `--lcars-elbow-width`, which has no value of its own and 
 
 Set `--lcars-elbow-width` on the elbow itself, or on a wrapper around it, for an elbow used where there is no sidebar to line up with. Setting it at `:root` reaches every elbow on the page, including the ones inside frames, and silently unaligns each arch from its own column. Before `0.1.0` this property was declared at `:root` with a value of `160px` and read by nothing; if you were using it as a constant in your own CSS, give your `var()` a fallback.
 
+`--lcars-radius-elbow` takes one length, or two for an elliptical corner, horizontal first.
+The label clears the corner by the horizontal length.
+The inset is capped so a radius too wide for the arch leaves room for the label, and the arch keeps its width.
+A percentage rounds the corner but gives the label no inset.
+
 An elbow's heading is as wide as its text, and the bar beside it takes what is left. A heading too long for the row does not take the bar's space: it ellipsizes, the bar keeps its share, and the arch keeps its width. Where the bar's own text still has to wrap, the bar grows to hold it rather than rendering text outside itself.
 
 ### `<lcars-button>`
