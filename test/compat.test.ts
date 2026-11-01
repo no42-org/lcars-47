@@ -129,10 +129,16 @@ describe.each(ENGINES)('%s', (engineName, engineType) => {
         return {
           scrolled: scroll.scrollTop > 0,
           gap: table.shadowRoot!.querySelector('th')!.getBoundingClientRect().top - box.getBoundingClientRect().top,
+          boxClip: getComputedStyle(scroll).clipPath,
         };
       });
       expect(r.scrolled, `table did not scroll in ${engineName}`).toBe(true);
       expect(Math.abs(r.gap), `header moved in ${engineName}`).toBeLessThanOrEqual(1);
+      // The compositor clip against Safari's seam above the header; see the
+      // layout gate for what it covers. Pinned here too because WebKit is the
+      // engine it is for, and a rule scoped away from one engine would pass
+      // the other's gate.
+      expect(r.boxClip, `scroll box clip missing in ${engineName}`).toBe('inset(0px)');
     } finally {
       await p.close();
     }

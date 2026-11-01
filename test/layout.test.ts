@@ -1757,6 +1757,7 @@ describe('lcars-table', () => {
         topEdge: at(box.left + 40, box.top + 1),
         headerCell: at(box.left + 40, header.top + header.height / 2),
         ruleShadow: getComputedStyle(root.querySelector('th')!).boxShadow,
+        boxClip: getComputedStyle(scroll).clipPath,
       };
     });
 
@@ -1772,6 +1773,13 @@ describe('lcars-table', () => {
       expect(r.gapAboveHeader).toBeLessThanOrEqual(SUBPIXEL_TOLERANCE_PX);
       expect(r.topEdge).toBe('TH');
       expect(r.headerCell).toBe('TH');
+      // The box carries a compositor clip. Without it, Safari paints the
+      // scrolled rows one device pixel past the box's top edge whenever that
+      // edge lands on a fractional pixel, as a bright seam above the header
+      // after a trackpad scroll. Nothing headless draws the seam, and the
+      // box's geometry reads correctly throughout, so the clip is what this
+      // pins, by its exact value.
+      expect(r.boxClip).toBe('inset(0px)');
     } finally {
       await p.close();
     }

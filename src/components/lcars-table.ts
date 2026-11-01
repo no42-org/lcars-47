@@ -89,6 +89,14 @@ export class LcarsTable extends LcarsElement {
       position: relative;
       padding: var(--scroll-padding);
       box-sizing: border-box;
+      /* A clip the compositor applies. Safari otherwise paints the scrolled
+         rows one device pixel past this box's top edge whenever that edge
+         lands on a fractional pixel, as a bright seam above the fixed header
+         after a trackpad scroll, outside the box where no header offset can
+         reach. A transform would do the same, at the price of containing
+         fixed-position cell content and losing subpixel text antialiasing on
+         a transparent layer. */
+      clip-path: inset(0);
     }
 
     .scroll:focus-visible {
