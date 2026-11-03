@@ -82,7 +82,7 @@
   },
   "overrides": {
     "@microsoft/api-extractor": {
-      "minimatch": "^11.0.3"
+      "minimatch": "^11.0.4"
     }
   }
 }
