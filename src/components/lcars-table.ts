@@ -183,6 +183,28 @@ export class LcarsTable extends LcarsElement {
       border-bottom: var(--lcars-border-width-sm, 1.5px) solid var(--lcars-color-surface);
     }
 
+    /* Rows in fives, so a reader keeps their place. The other lines go
+       transparent rather than away, so row heights stay put. The marker counts
+       rendered rows, so groups survive a sort, and skips the last row, where
+       it would only double the table's end. */
+    table.grouped td {
+      border-bottom-color: transparent;
+    }
+
+    table.grouped tbody tr:nth-child(5n):not(:last-child) td {
+      border-bottom-color: color-mix(
+        in srgb,
+        var(--table-color) 20%,
+        var(--lcars-color-surface)
+      );
+      padding-bottom: calc(var(--lcars-gap-sm, 4px) + var(--lcars-gap-xs, 2px));
+    }
+
+    /* The other half of the gap, so the line sits centred in it. */
+    table.grouped tbody tr:nth-child(5n + 6) td {
+      padding-top: calc(var(--lcars-gap-sm, 4px) + var(--lcars-gap-xs, 2px));
+    }
+
     td.wrap {
       white-space: normal;
     }
@@ -260,6 +282,14 @@ export class LcarsTable extends LcarsElement {
   /** `band` fills the header with `color`. `rule` sets its text over a thin rule. */
   @property({ type: String, attribute: 'header-style' })
   headerStyle: LcarsTableHeaderStyle = 'band';
+
+  /**
+   * Drops the line after every fifth row and draws one under every row
+   * instead. An opt-out, because a default-true boolean cannot be switched
+   * off from markup.
+   */
+  @property({ type: Boolean, reflect: true, attribute: 'no-row-groups' })
+  noRowGroups = false;
 
   /** Accessible name of the table and its scroll region. */
   @property({ type: String })
@@ -458,7 +488,12 @@ export class LcarsTable extends LcarsElement {
         style="--table-color: ${tableColor};"
         @blur=${this.syncTabStop}
       >
-        <table class="${this.headerStyle === 'rule' ? 'rule' : nothing}" aria-label="${this.label}">
+        <table
+          class="${[this.headerStyle === 'rule' && 'rule', !this.noRowGroups && 'grouped']
+            .filter(Boolean)
+            .join(' ')}"
+          aria-label="${this.label}"
+        >
           <thead>
             <tr>
               ${this.columns.map((column) => this.renderHeader(column))}
