@@ -1854,10 +1854,10 @@ describe('lcars-table', () => {
     }
   });
 
-  it('draws the same line under every row when ungrouped', async () => {
+  it('draws the same line under every row given no-row-groups', async () => {
     const p = await openWorkbench(VIEWPORT);
     try {
-      await mountLongTable(p, { attributes: { ungrouped: '' } });
+      await mountLongTable(p, { attributes: { 'no-row-groups': '' } });
       const rows = await measureRows(p);
       expect(new Set(rows.slice(1).map((row) => row.height)).size).toBe(1);
       expect(new Set(rows.map((row) => row.line)).size).toBe(1);

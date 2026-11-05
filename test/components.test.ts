@@ -196,15 +196,15 @@ describe('LCARS Geometric Framework Components', () => {
       expect(element?.classList.contains('rule')).toBe(true);
     });
 
-    it('groups rows unless ungrouped', async () => {
+    it('groups rows unless no-row-groups is set', async () => {
       const table = await makeTable();
       const element = table.shadowRoot?.querySelector('table');
       expect(element?.classList.contains('grouped')).toBe(true);
 
-      table.setAttribute('ungrouped', '');
+      table.setAttribute('no-row-groups', '');
       await table.updateComplete;
 
-      expect(table.ungrouped).toBe(true);
+      expect(table.noRowGroups).toBe(true);
       expect(element?.classList.contains('grouped')).toBe(false);
     });
 

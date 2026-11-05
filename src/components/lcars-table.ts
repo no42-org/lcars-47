@@ -288,8 +288,8 @@ export class LcarsTable extends LcarsElement {
    * instead. An opt-out, because a default-true boolean cannot be switched
    * off from markup.
    */
-  @property({ type: Boolean, reflect: true })
-  ungrouped = false;
+  @property({ type: Boolean, reflect: true, attribute: 'no-row-groups' })
+  noRowGroups = false;
 
   /** Accessible name of the table and its scroll region. */
   @property({ type: String })
@@ -489,7 +489,7 @@ export class LcarsTable extends LcarsElement {
         @blur=${this.syncTabStop}
       >
         <table
-          class="${[this.headerStyle === 'rule' && 'rule', !this.ungrouped && 'grouped']
+          class="${[this.headerStyle === 'rule' && 'rule', !this.noRowGroups && 'grouped']
             .filter(Boolean)
             .join(' ')}"
           aria-label="${this.label}"
