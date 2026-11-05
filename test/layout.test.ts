@@ -1820,6 +1820,53 @@ describe('lcars-table', () => {
     }
   });
 
+  /** Height and bottom line colour of every body row, in screen order. */
+  const measureRows = (p: Page) =>
+    p.evaluate(() =>
+      Array.from(
+        document.querySelector('#fixed-box lcars-table')!.shadowRoot!.querySelectorAll('tbody tr')
+      ).map((row) => ({
+        height: row.getBoundingClientRect().height,
+        line: getComputedStyle(row.querySelector('td')!).borderBottomColor,
+      }))
+    );
+
+  it('centres a tinted line in a gap after every fifth row but the last', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p);
+      const rows = await measureRows(p);
+      // Not the first row: collapsed borders already make it half a pixel
+      // shorter, with or without groups.
+      const plain = rows[1].height;
+      const transparent = 'rgba(0, 0, 0, 0)';
+      const marked = [4, 9, 14];
+      rows.slice(1).forEach((row, at) => {
+        const i = at + 1;
+        // The gap splits evenly: 2px under the marked row, 2px over the next.
+        const grown = marked.includes(i) || marked.includes(i - 1);
+        expect(row.height).toBeCloseTo(grown ? plain + 2 : plain, 1);
+        expect(row.line === transparent).toBe(!marked.includes(i));
+      });
+      expect(rows[0].line).toBe(transparent);
+    } finally {
+      await p.close();
+    }
+  });
+
+  it('draws the same line under every row when ungrouped', async () => {
+    const p = await openWorkbench(VIEWPORT);
+    try {
+      await mountLongTable(p, { attributes: { ungrouped: '' } });
+      const rows = await measureRows(p);
+      expect(new Set(rows.slice(1).map((row) => row.height)).size).toBe(1);
+      expect(new Set(rows.map((row) => row.line)).size).toBe(1);
+      expect(rows[0].line).not.toBe('rgba(0, 0, 0, 0)');
+    } finally {
+      await p.close();
+    }
+  });
+
   it('draws the rule on a scrolled header', async () => {
     const p = await openWorkbench(VIEWPORT);
     try {

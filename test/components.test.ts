@@ -196,6 +196,18 @@ describe('LCARS Geometric Framework Components', () => {
       expect(element?.classList.contains('rule')).toBe(true);
     });
 
+    it('groups rows unless ungrouped', async () => {
+      const table = await makeTable();
+      const element = table.shadowRoot?.querySelector('table');
+      expect(element?.classList.contains('grouped')).toBe(true);
+
+      table.setAttribute('ungrouped', '');
+      await table.updateComplete;
+
+      expect(table.ungrouped).toBe(true);
+      expect(element?.classList.contains('grouped')).toBe(false);
+    });
+
     it('marks only wrap columns as wrapping', async () => {
       const table = await makeTable();
       table.columns = [

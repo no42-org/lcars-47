@@ -267,7 +267,7 @@ Re-enabling it returns focus to the toggle control.
 
 ### `<lcars-table>`
 Data table with sortable headers. It scrolls wide content inside its own box and, given a height, scrolls its rows under a fixed header. The table owns sorting: give it the data and it reorders rows itself.
-- **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`, `header-style` (`'band' | 'rule'`, default `'band'`).
+- **Properties**: `columns` and `rows` (JS properties only), `sort-key`, `sort-direction` (`'ascending' | 'descending'`, default `'ascending'`), `label` (accessible name, default `Table`), `color`, `header-style` (`'band' | 'rule'`, default `'band'`), `ungrouped`.
 - **Column**: `key`, `label`, `sortable`, `align` (`'start' | 'center' | 'end'`), `mono`, `wrap`, `render(row)` (returns a string, a DOM node or a Lit template).
 - **Custom properties**: `--lcars-table-header-backing` (colour behind the header, default transparent for `band` and `--lcars-color-bg` for `rule`).
 - **Events**: `lcars-sort` (CustomEvent with `{ key, direction }`). It bubbles and crosses shadow boundaries.
@@ -282,6 +282,10 @@ table.rows = [{ name: 'Enterprise', warp: 9.6 }, { name: 'Defiant', warp: 9.5 }]
 ```
 
 Assign a new `rows` array to update the table. Changes made in place are not seen.
+Rows show in groups of five, so a reader keeps their place in a long table.
+A tinted line sits centred in a small gap after every fifth row, and the rows between carry no line.
+Groups count rows as shown, so they hold after a sort.
+`ungrouped` drops the groups and draws a line under every row instead.
 Numbers sort numerically and other values as text in numeric order. Dates sort by time. Empty values (`null`, `undefined`, `''`, `NaN`) sort last in both directions.
 Cells do not wrap unless their column sets `wrap`, so wide content scrolls.
 A `wrap` column stops narrowing at its header label or its longest word, so a long URL can still scroll sideways. Set `min-width` on rendered content to raise that floor.
